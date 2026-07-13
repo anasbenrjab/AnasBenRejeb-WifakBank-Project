@@ -1,0 +1,47 @@
+# People OU
+dn: ou=people,dc=wifakbank,dc=tn
+objectClass: top
+objectClass: organizationalUnit
+ou: people
+
+# Groups OU
+dn: ou=groups,dc=wifakbank,dc=tn
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+# ── Test users ───────────────────────────────────────────────────────────────
+
+# admin  /  Admin1234!
+dn: uid=admin,ou=people,dc=wifakbank,dc=tn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: admin
+cn: Administrateur Système
+sn: Admin
+givenName: Système
+mail: admin@wifakbank.tn
+userPassword: Admin1234!
+
+# ahmed  /  Ahmed1234!
+dn: uid=ahmed,ou=people,dc=wifakbank,dc=tn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: ahmed
+cn: Ahmed Ben Ali
+sn: Ben Ali
+givenName: Ahmed
+mail: ahmed@wifakbank.tn
+userPassword: Ahmed1234!
+
+# ── Groups (optional, for AD group-based role mapping later) ─────────────────
+dn: cn=bankusers,ou=groups,dc=wifakbank,dc=tn
+objectClass: top
+objectClass: groupOfNames
+cn: bankusers
+member: uid=admin,ou=people,dc=wifakbank,dc=tn
+member: uid=ahmed,ou=people,dc=wifakbank,dc=tn

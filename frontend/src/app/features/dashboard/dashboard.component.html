@@ -1,0 +1,96 @@
+<div class="dashboard-layout">
+
+  <!-- ── Top nav ─────────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="brand-icon">🏦</span>
+      <span class="brand-name">Wifak Bank</span>
+      <span class="brand-divider">|</span>
+      <span class="brand-subtitle">Portail des Applications</span>
+    </div>
+
+    <div class="topbar-user">
+      @if (user) {
+        <div class="user-info">
+          <span class="user-avatar" aria-hidden="true">
+            {{ user.prenom.charAt(0).toUpperCase() }}{{ user.nom.charAt(0).toUpperCase() }}
+          </span>
+          <div class="user-details">
+            <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
+            <span class="user-login">{{ user.login }}</span>
+          </div>
+        </div>
+      }
+      <button class="btn-logout" (click)="logout()" aria-label="Se déconnecter">
+        <span aria-hidden="true">↩</span> Déconnexion
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main content ────────────────────────────────────────────────── -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h2 class="page-title">Mes Applications</h2>
+      @if (user) {
+        <p class="page-subtitle">
+          Bonjour <strong>{{ user.prenom }}</strong>, voici vos applications autorisées.
+        </p>
+      }
+    </div>
+
+    <!-- Loading state -->
+    @if (loading()) {
+      <div class="state-container" role="status" aria-live="polite">
+        <div class="spinner-large"></div>
+        <p class="state-text">Chargement des applications…</p>
+      </div>
+    }
+
+    <!-- Error state -->
+    @if (!loading() && errorMessage()) {
+      <div class="alert alert-error" role="alert">
+        <span class="alert-icon">⚠</span>
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!loading() && !errorMessage() && apps().length === 0) {
+      <div class="state-container">
+        <span class="empty-icon" aria-hidden="true">📭</span>
+        <p class="state-text">Aucune application disponible pour votre compte.</p>
+        <p class="state-hint">Contactez votre administrateur pour obtenir des accès.</p>
+      </div>
+    }
+
+    <!-- Apps grid -->
+    @if (!loading() && apps().length > 0) {
+      <div class="apps-grid" role="list">
+        @for (app of apps(); track app.id) {
+          <article class="app-card" role="listitem">
+            <div class="app-icon-wrapper" aria-hidden="true">
+              <span class="app-icon material-symbols-outlined">{{ app.icon || 'apps' }}</span>
+            </div>
+            <div class="app-body">
+              <h3 class="app-name">{{ app.nom }}</h3>
+              @if (app.description) {
+                <p class="app-description">{{ app.description }}</p>
+              }
+            </div>
+            <button
+              class="btn-open"
+              (click)="openApp(app.url)"
+              [disabled]="!app.url"
+              [attr.aria-label]="'Ouvrir ' + app.nom"
+            >
+              Ouvrir
+              <span aria-hidden="true">↗</span>
+            </button>
+          </article>
+        }
+      </div>
+    }
+
+  </main>
+</div>

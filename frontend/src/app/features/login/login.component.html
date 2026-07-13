@@ -1,0 +1,86 @@
+<div class="login-page">
+  <div class="login-card">
+
+    <div class="login-header">
+      <div class="bank-logo">
+        <span class="logo-icon">🏦</span>
+      </div>
+      <h1 class="bank-name">Wifak Bank</h1>
+      <p class="bank-subtitle">Portail des Applications</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <!-- Error banner -->
+      @if (errorMessage()) {
+        <div class="alert alert-error" role="alert">
+          <span class="alert-icon">⚠</span>
+          {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Login field -->
+      <div class="form-group">
+        <label for="login" class="form-label">Identifiant</label>
+        <input
+          id="login"
+          type="text"
+          class="form-control"
+          [class.invalid]="loginCtrl.invalid && loginCtrl.touched"
+          formControlName="login"
+          placeholder="Votre identifiant AD"
+          autocomplete="username"
+          aria-describedby="login-error"
+        />
+        @if (loginCtrl.invalid && loginCtrl.touched) {
+          <span id="login-error" class="field-error">Le login est obligatoire.</span>
+        }
+      </div>
+
+      <!-- Password field -->
+      <div class="form-group">
+        <label for="password" class="form-label">Mot de passe</label>
+        <div class="password-wrapper">
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            class="form-control"
+            [class.invalid]="passwordCtrl.invalid && passwordCtrl.touched"
+            formControlName="password"
+            placeholder="Votre mot de passe"
+            autocomplete="current-password"
+            aria-describedby="password-error"
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="togglePassword()"
+            [attr.aria-label]="showPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+          >
+            {{ showPassword() ? '🙈' : '👁' }}
+          </button>
+        </div>
+        @if (passwordCtrl.invalid && passwordCtrl.touched) {
+          <span id="password-error" class="field-error">Le mot de passe est obligatoire.</span>
+        }
+      </div>
+
+      <!-- Submit -->
+      <button
+        type="submit"
+        class="btn-submit"
+        [disabled]="loading()"
+        [class.loading]="loading()"
+      >
+        @if (loading()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Connexion en cours…
+        } @else {
+          Se connecter
+        }
+      </button>
+
+    </form>
+
+  </div>
+</div>
