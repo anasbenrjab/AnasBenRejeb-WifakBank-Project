@@ -1,0 +1,178 @@
+/* ── OTP header ──────────────────────────────────────────────────────────── */
+.otp-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.otp-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.otp-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0a2342;
+  margin: 0 0 0.5rem;
+}
+
+.otp-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Alerts ──────────────────────────────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+.alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.alert-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+.alert-icon {
+  flex-shrink: 0;
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.4rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.65rem 0.875rem;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #111827;
+  background: #f9fafb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #1a4a7a;
+  box-shadow: 0 0 0 3px rgba(26, 74, 122, 0.15);
+  background: #fff;
+}
+
+.form-control.invalid {
+  border-color: #ef4444;
+}
+
+/* OTP input: centred, large, monospace for digit readability */
+.otp-input {
+  text-align: center;
+  font-size: 1.6rem;
+  font-family: 'Courier New', Courier, monospace;
+  letter-spacing: 0.4em;
+  padding: 0.75rem 1rem;
+}
+
+.field-error {
+  display: block;
+  font-size: 0.78rem;
+  color: #dc2626;
+  margin-top: 0.3rem;
+}
+
+/* ── Submit button ───────────────────────────────────────────────────────── */
+.btn-submit {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #0a2342, #1a4a7a);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: opacity 0.2s;
+  margin-bottom: 1rem;
+}
+
+.btn-submit:hover:not(:disabled) { opacity: 0.9; }
+.btn-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Resend + Back row ───────────────────────────────────────────────────── */
+.otp-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-resend {
+  background: none;
+  border: none;
+  font-size: 0.825rem;
+  color: #1a4a7a;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.btn-resend:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.btn-resend:hover:not(:disabled) { opacity: 0.75; }
+
+.btn-back {
+  background: none;
+  border: none;
+  font-size: 0.825rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.btn-back:hover:not(:disabled) { color: #374151; }
+.btn-back:disabled { opacity: 0.5; cursor: not-allowed; }

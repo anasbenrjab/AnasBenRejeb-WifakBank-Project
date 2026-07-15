@@ -5,11 +5,12 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ErrorResponse } from '../../core/models/auth.models';
 import { HttpErrorResponse } from '@angular/common/http';
+import { OtpStepComponent } from './otp-step/otp-step.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, OtpStepComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
@@ -22,6 +23,12 @@ export class LoginComponent {
   readonly errorMessage = signal<string | null>(null);
   readonly showPassword = signal(false);
 
+  // ── OTP step state ────────────────────────────────────────────────────────
+  /** When true, hide the credentials form and show the OTP form. */
+  readonly otpRequired  = signal(false);
+  /** Login stored after step 1 succeeds — passed to the OTP step. */
+  readonly pendingLogin = signal<string>('');
+
   form = this.fb.nonNullable.group({
     login:    ['', [Validators.required]],
     password: ['', [Validators.required]]
@@ -31,6 +38,7 @@ export class LoginComponent {
     this.showPassword.update(v => !v);
   }
 
+  /** Step 1: validate credentials → expect otpRequired=true from backend. */
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -41,9 +49,16 @@ export class LoginComponent {
     this.errorMessage.set(null);
 
     this.auth.login(this.form.getRawValue()).subscribe({
-      next: () => {
+      next: res => {
         this.loading.set(false);
-        this.router.navigate(['/dashboard']);
+        if (res.otpRequired) {
+          // Store login for step 2, then show OTP screen
+          this.pendingLogin.set(res.login);
+          this.otpRequired.set(true);
+        } else {
+          // Fallback: if backend skips OTP (shouldn't happen), go straight to dashboard
+          this.router.navigate(['/dashboard']);
+        }
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
@@ -53,6 +68,19 @@ export class LoginComponent {
         );
       }
     });
+  }
+
+  /** Called by OtpStepComponent when OTP verification succeeds. */
+  onOtpVerified(): void {
+    this.router.navigate(['/dashboard']);
+  }
+
+  /** Called by OtpStepComponent if the user wants to go back to step 1. */
+  onBackToLogin(): void {
+    this.otpRequired.set(false);
+    this.pendingLogin.set('');
+    this.errorMessage.set(null);
+    this.form.reset();
   }
 
   get loginCtrl()    { return this.form.controls.login; }

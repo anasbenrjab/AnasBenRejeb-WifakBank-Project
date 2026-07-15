@@ -36,5 +36,5 @@ public class AuditLog {
         if (dateAction == null) dateAction = LocalDateTime.now();
     }
 
-    public enum Action { LOGIN, LOGOUT, LOGIN_FAILED, LOGIN_INACTIVE }
+    public enum Action { LOGIN, LOGOUT, LOGIN_FAILED, LOGIN_INACTIVE, OTP_GENERATED, OTP_VERIFIED, OTP_FAILED }
 }

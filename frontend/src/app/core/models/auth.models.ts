@@ -4,11 +4,21 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
+  token?: string;
   login: string;
-  nom: string;
-  prenom: string;
+  nom?: string;
+  prenom?: string;
   email: string;
+  otpRequired?: boolean;
+}
+
+export interface VerifyOtpRequest {
+  login: string;
+  code: string;
+}
+
+export interface ResendOtpRequest {
+  login: string;
 }
 
 export interface UserSummary {

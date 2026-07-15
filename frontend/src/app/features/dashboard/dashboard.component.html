@@ -13,10 +13,10 @@
       @if (user) {
         <div class="user-info">
           <span class="user-avatar" aria-hidden="true">
-            {{ user.prenom.charAt(0).toUpperCase() }}{{ user.nom.charAt(0).toUpperCase() }}
+            {{ (user.prenom?.[0] ?? '?').toUpperCase() }}{{ (user.nom?.[0] ?? '').toUpperCase() }}
           </span>
           <div class="user-details">
-            <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
+            <span class="user-name">{{ user.prenom || '' }} {{ user.nom || '' }}</span>
             <span class="user-login">{{ user.login }}</span>
           </div>
         </div>
@@ -34,7 +34,7 @@
       <h2 class="page-title">Mes Applications</h2>
       @if (user) {
         <p class="page-subtitle">
-          Bonjour <strong>{{ user.prenom }}</strong>, voici vos applications autorisées.
+          Bonjour <strong>{{ user.prenom || user.login }}</strong>, voici vos applications autorisées.
         </p>
       }
     </div>

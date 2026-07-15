@@ -1,5 +1,6 @@
 package tn.esprit.wifakbankproject.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -11,6 +12,7 @@ import tn.esprit.wifakbankproject.dto.ErrorResponse;
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -37,6 +39,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        // Log the full stack trace so unhandled errors are visible in server logs.
+        // The client receives a generic message; details stay server-side.
+        log.error("Unhandled exception: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse(500, "Erreur interne du serveur.", LocalDateTime.now()));
     }

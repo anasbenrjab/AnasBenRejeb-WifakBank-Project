@@ -4,12 +4,9 @@ spring.application.name=WifakBankProject
 spring.profiles.active=dev
 
 # ── Oracle DataSource ─────────────────────────────────────────────────────────
-# C##wifak_platform = common user created in CDB root (XE).
-# If you created the user inside XEPDB1 instead, use:
-#   url=jdbc:oracle:thin:@//localhost:1521/XEPDB1  and  username=wifak_platform
-spring.datasource.url=jdbc:oracle:thin:@localhost:1521/XE
-spring.datasource.username=C##wifak_platform
-spring.datasource.password=wifak123
+spring.datasource.url=jdbc:oracle:thin:@YOUR_DB_HOST:1521/YOUR_DB_SERVICE
+spring.datasource.username=YOUR_DB_USERNAME
+spring.datasource.password=YOUR_DB_PASSWORD
 spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
 
 # ── JPA / Hibernate ───────────────────────────────────────────────────────────
@@ -23,21 +20,16 @@ spring.sql.init.data-locations=classpath:data.sql
 spring.jpa.defer-datasource-initialization=true
 
 # ── Embedded LDAP (UnboundID – active only when profile=dev) ──────────────────
-# Remove / comment these 3 lines when switching to a real AD server.
-spring.ldap.embedded.base-dn=dc=wifakbank,dc=tn
+spring.ldap.embedded.base-dn=dc=example,dc=com
 spring.ldap.embedded.ldif=classpath:test-users.ldif
 spring.ldap.embedded.port=8389
 
 # ── AD / LDAP connection ──────────────────────────────────────────────────────
-# DEV  → embedded server on localhost:8389 (profile=dev)
-# PROD → point to real DC (profile=prod or remove spring.profiles.active=dev)
-#         Two values to change, zero code changes needed.
-app.ad.domain=wifakbank.tn
-app.ad.url=ldap://localhost:8389/
+app.ad.domain=YOUR_AD_DOMAIN
+app.ad.url=ldap://YOUR_AD_HOST:YOUR_AD_PORT/
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
-# 64-byte Base64 key. Override via env-var APP_JWT_SECRET in production.
-app.jwt.secret=V2lmYWtCYW5rU3VwZXJTZWNyZXRLZXkxMjM0NTY3ODkwQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=
+app.jwt.secret=YOUR_JWT_SECRET
 app.jwt.expiration-ms=86400000
 
 # ── CORS (Angular dev server) ─────────────────────────────────────────────────
@@ -45,3 +37,12 @@ app.cors.allowed-origins=http://localhost:4200
 
 # ── Server ────────────────────────────────────────────────────────────────────
 server.port=8080
+
+# ── Mail / SMTP (Gmail) ──────────────────────────────────────────────────────
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=YOUR_SMTP_USERNAME
+spring.mail.password=YOUR_SMTP_PASSWORD
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
