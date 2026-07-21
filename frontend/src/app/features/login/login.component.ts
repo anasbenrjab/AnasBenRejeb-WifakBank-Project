@@ -57,7 +57,7 @@ export class LoginComponent {
           this.otpRequired.set(true);
         } else {
           // Fallback: if backend skips OTP (shouldn't happen), go straight to dashboard
-          this.router.navigate(['/dashboard']);
+          this.redirectAfterLogin();
         }
       },
       error: (err: HttpErrorResponse) => {
@@ -72,7 +72,15 @@ export class LoginComponent {
 
   /** Called by OtpStepComponent when OTP verification succeeds. */
   onOtpVerified(): void {
-    this.router.navigate(['/dashboard']);
+    this.redirectAfterLogin();
+  }
+
+  private redirectAfterLogin(): void {
+    if (this.auth.isAdmin()) {
+      this.router.navigate(['/admin/dashboard']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 
   /** Called by OtpStepComponent if the user wants to go back to step 1. */

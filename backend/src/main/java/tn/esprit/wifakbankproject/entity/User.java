@@ -47,6 +47,10 @@ public class User {
     @Column(name = "LAST_LOGIN")
     private LocalDateTime lastLogin;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Builder.Default
     private Set<UserRole> userRoles = new HashSet<>();

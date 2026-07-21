@@ -14,16 +14,22 @@ import { AppEntry } from '../../core/models/dashboard.models';
 })
 export class DashboardComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
-  private readonly router           = inject(Router);
-  readonly auth                     = inject(AuthService);
+  private readonly router = inject(Router);
+  readonly auth = inject(AuthService);
 
-  readonly apps         = signal<AppEntry[]>([]);
-  readonly loading      = signal(true);
+  readonly apps = signal<AppEntry[]>([]);
+  readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
 
   get user() { return this.auth.currentUser(); }
 
   ngOnInit(): void {
+    // Redirect admin users to admin dashboard
+    if (this.auth.isAdmin()) {
+      this.router.navigate(['/admin/dashboard']);
+      return;
+    }
+
     this.dashboardService.getAuthorizedApps().subscribe({
       next: data => {
         this.apps.set(data);

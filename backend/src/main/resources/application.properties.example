@@ -1,15 +1,15 @@
 spring.application.name=WifakBankProject
 
-# ── Active profile (dev = embedded LDAP; remove or change for real AD) ───────
+# Active profile
 spring.profiles.active=dev
 
-# ── Oracle DataSource ─────────────────────────────────────────────────────────
+# Oracle DataSource
 spring.datasource.url=jdbc:oracle:thin:@YOUR_DB_HOST:1521/YOUR_DB_SERVICE
 spring.datasource.username=YOUR_DB_USERNAME
 spring.datasource.password=YOUR_DB_PASSWORD
 spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
 
-# ── JPA / Hibernate ───────────────────────────────────────────────────────────
+# JPA / Hibernate
 spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
@@ -19,26 +19,26 @@ spring.sql.init.mode=always
 spring.sql.init.data-locations=classpath:data.sql
 spring.jpa.defer-datasource-initialization=true
 
-# ── Embedded LDAP (UnboundID – active only when profile=dev) ──────────────────
+# Embedded LDAP
 spring.ldap.embedded.base-dn=dc=example,dc=com
 spring.ldap.embedded.ldif=classpath:test-users.ldif
 spring.ldap.embedded.port=8389
 
-# ── AD / LDAP connection ──────────────────────────────────────────────────────
+# AD / LDAP connection
 app.ad.domain=YOUR_AD_DOMAIN
 app.ad.url=ldap://YOUR_AD_HOST:YOUR_AD_PORT/
 
-# ── JWT ───────────────────────────────────────────────────────────────────────
+# JWT
 app.jwt.secret=YOUR_JWT_SECRET
 app.jwt.expiration-ms=86400000
 
-# ── CORS (Angular dev server) ─────────────────────────────────────────────────
+# CORS
 app.cors.allowed-origins=http://localhost:4200
 
-# ── Server ────────────────────────────────────────────────────────────────────
+# Server
 server.port=8080
 
-# ── Mail / SMTP (Gmail) ──────────────────────────────────────────────────────
+# Mail / SMTP
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
 spring.mail.username=YOUR_SMTP_USERNAME

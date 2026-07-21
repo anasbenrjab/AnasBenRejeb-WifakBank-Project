@@ -1,0 +1,109 @@
+<div class="page-header">
+  <h1 class="page-title">Manage Roles</h1>
+  <button class="btn btn-primary" (click)="startCreate()" [disabled]="showCreateForm() || editingRoleId()">
+    + Ajouter un rôle
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="state-container">
+    <div class="spinner-large"></div>
+    <p class="state-text">Chargement des rôles...</p>
+  </div>
+} @else if (errorMessage()) {
+  <div class="alert alert-error">
+    <span class="alert-icon">⚠</span>
+    {{ errorMessage() }}
+  </div>
+} @else {
+  <div class="card">
+    @if (showCreateForm() || editingRoleId()) {
+      <div class="form-section">
+        <h3 class="form-title">{{ editingRoleId() ? 'Modifier le rôle' : 'Ajouter un rôle' }}</h3>
+        <form [formGroup]="editForm" (ngSubmit)="saveRole()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Application</label>
+              <select formControlName="applicationId" class="form-input">
+                <option value="">Sélectionner une application</option>
+                @for (app of applications(); track app.id) {
+                  <option [ngValue]="app.id">{{ app.nom }} ({{ app.code }})</option>
+                }
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Nom</label>
+              <input type="text" formControlName="nom" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea formControlName="description" class="form-input" rows="3"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Application</th>
+            <th>Nom</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (role of roles(); track role.id) {
+            <tr [class.editing]="editingRoleId() === role.id">
+              @if (editingRoleId() === role.id) {
+                <td colspan="4">
+                  <form [formGroup]="editForm" (ngSubmit)="saveRole()" class="edit-form">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>Application</label>
+                        <select formControlName="applicationId" class="form-input">
+                          <option value="">Sélectionner une application</option>
+                          @for (app of applications(); track app.id) {
+                            <option [ngValue]="app.id">{{ app.nom }} ({{ app.code }})</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>Nom</label>
+                        <input type="text" formControlName="nom" class="form-input" />
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label>Description</label>
+                      <textarea formControlName="description" class="form-input" rows="2"></textarea>
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
+                      <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                  </form>
+                </td>
+              } @else {
+                <td>
+                  <span class="badge-code">{{ role.application.code }}</span> {{ role.application.nom }}
+                </td>
+                <td>{{ role.nom }}</td>
+                <td>{{ role.description || '-' }}</td>
+                <td>
+                  <button class="btn btn-small btn-secondary" (click)="startEdit(role)">Modifier</button>
+                  <button class="btn btn-small btn-danger" (click)="deleteRole(role.id)">Supprimer</button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}

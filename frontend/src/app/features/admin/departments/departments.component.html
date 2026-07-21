@@ -1,0 +1,97 @@
+<div class="page-header">
+  <h1 class="page-title">Manage Departments</h1>
+  <button class="btn btn-primary" (click)="startCreate()" [disabled]="showCreateForm() || editingDeptId()">
+    + Ajouter un département
+  </button>
+</div>
+
+@if (loading()) {
+  <div class="state-container">
+    <div class="spinner-large"></div>
+    <p class="state-text">Chargement des départements...</p>
+  </div>
+} @else if (errorMessage()) {
+  <div class="alert alert-error">
+    <span class="alert-icon">⚠</span>
+    {{ errorMessage() }}
+  </div>
+} @else {
+  <div class="card">
+    @if (showCreateForm() || editingDeptId()) {
+      <div class="form-section">
+        <h3 class="form-title">{{ editingDeptId() ? 'Modifier le département' : 'Ajouter un département' }}</h3>
+        <form [formGroup]="editForm" (ngSubmit)="saveDept()">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Code</label>
+              <input type="text" formControlName="code" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Nom</label>
+              <input type="text" formControlName="name" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea formControlName="description" class="form-input" rows="3"></textarea>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Nom</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (dept of departments(); track dept.id) {
+            <tr [class.editing]="editingDeptId() === dept.id">
+              @if (editingDeptId() === dept.id) {
+                <td colspan="4">
+                  <form [formGroup]="editForm" (ngSubmit)="saveDept()" class="edit-form">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>Code</label>
+                        <input type="text" formControlName="code" class="form-input" />
+                      </div>
+                      <div class="form-group">
+                        <label>Nom</label>
+                        <input type="text" formControlName="name" class="form-input" />
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label>Description</label>
+                      <textarea formControlName="description" class="form-input" rows="2"></textarea>
+                    </div>
+                    <div class="form-actions">
+                      <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
+                      <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                  </form>
+                </td>
+              } @else {
+                <td><span class="badge-code">{{ dept.code }}</span></td>
+                <td>{{ dept.name }}</td>
+                <td>{{ dept.description || '-' }}</td>
+                <td>
+                  <button class="btn btn-small btn-secondary" (click)="startEdit(dept)">Modifier</button>
+                  <button class="btn btn-small btn-danger" (click)="deleteDept(dept.id)">Supprimer</button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}

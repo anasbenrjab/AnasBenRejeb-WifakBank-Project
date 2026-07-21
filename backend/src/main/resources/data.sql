@@ -2,6 +2,28 @@
 -- Seed data – Oracle-compatible MERGE INTO … USING dual (idempotent)
 -- =============================================================================
 
+-- ── DEPARTMENTS ──────────────────────────────────────────────────────────────
+
+MERGE INTO DEPARTMENTS d
+USING dual ON (d.CODE = 'IT')
+WHEN NOT MATCHED THEN INSERT (ID, CODE, NAME, DESCRIPTION)
+  VALUES (1, 'IT', 'Informatique', 'Département informatique');
+
+MERGE INTO DEPARTMENTS d
+USING dual ON (d.CODE = 'RH')
+WHEN NOT MATCHED THEN INSERT (ID, CODE, NAME, DESCRIPTION)
+  VALUES (2, 'RH', 'Ressources Humaines', 'Département RH');
+
+MERGE INTO DEPARTMENTS d
+USING dual ON (d.CODE = 'FINANCE')
+WHEN NOT MATCHED THEN INSERT (ID, CODE, NAME, DESCRIPTION)
+  VALUES (3, 'FINANCE', 'Finance', 'Département finance');
+
+MERGE INTO DEPARTMENTS d
+USING dual ON (d.CODE = 'COMMERCIAL')
+WHEN NOT MATCHED THEN INSERT (ID, CODE, NAME, DESCRIPTION)
+  VALUES (4, 'COMMERCIAL', 'Commercial', 'Département commercial');
+
 -- ── APPLICATIONS ─────────────────────────────────────────────────────────────
 
 MERGE INTO APPLICATIONS a
@@ -95,13 +117,13 @@ WHEN NOT MATCHED THEN INSERT (ID, APPLICATION_ID, NOM, DESCRIPTION)
 
 MERGE INTO USERS u
 USING dual ON (u.LOGIN = 'admin')
-WHEN NOT MATCHED THEN INSERT (ID, LOGIN, NOM, PRENOM, EMAIL, AUTH_TYPE, STATUS, CREATED_AT)
-  VALUES (1, 'admin', 'Admin', 'Système', 'admin@wifakbank.tn', 'AD', 'ACTIVE', SYSTIMESTAMP);
+WHEN NOT MATCHED THEN INSERT (ID, LOGIN, NOM, PRENOM, EMAIL, AUTH_TYPE, STATUS, CREATED_AT, DEPARTMENT_ID)
+  VALUES (1, 'admin', 'Admin', 'Système', 'admin@wifakbank.tn', 'AD', 'ACTIVE', SYSTIMESTAMP, 1);
 
 MERGE INTO USERS u
 USING dual ON (u.LOGIN = 'ahmed')
-WHEN NOT MATCHED THEN INSERT (ID, LOGIN, NOM, PRENOM, EMAIL, AUTH_TYPE, STATUS, CREATED_AT)
-  VALUES (2, 'ahmed', 'Ben Ali', 'Ahmed', 'ahmed@wifakbank.tn', 'AD', 'ACTIVE', SYSTIMESTAMP);
+WHEN NOT MATCHED THEN INSERT (ID, LOGIN, NOM, PRENOM, EMAIL, AUTH_TYPE, STATUS, CREATED_AT, DEPARTMENT_ID)
+  VALUES (2, 'ahmed', 'Ben Ali', 'Ahmed', 'ahmed@wifakbank.tn', 'AD', 'ACTIVE', SYSTIMESTAMP, 3);
 
 -- ── USER_ROLES for ahmed: CREDIT/Validation, RH/Consultation, GED/Administrateur
 

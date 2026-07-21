@@ -3,16 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
-import { LoginRequest, LoginResponse, UserSummary } from '../models/auth.models';
+import { LoginRequest, LoginResponse, UserSummary, UserDto } from '../models/auth.models';
 import { environment } from '../../../environments/environment';
 
 const TOKEN_KEY = 'wifak_token';
-const USER_KEY  = 'wifak_user';
-const API_URL   = `${environment.apiUrl}/api/auth`;
+const USER_KEY = 'wifak_user';
+const API_URL = `${environment.apiUrl}/api/auth`;
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly http   = inject(HttpClient);
+  private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
   // ── signals ───────────────────────────────────────────────────────────────
@@ -24,12 +24,16 @@ export class AuthService {
   );
 
   /** Read-only public signals */
-  readonly token       = this._token.asReadonly();
+  readonly token = this._token.asReadonly();
   readonly currentUser = this._user.asReadonly();
   /** True only if a token exists AND it has not expired. */
-  readonly isLoggedIn  = computed(() => {
+  readonly isLoggedIn = computed(() => {
     const t = this._token();
     return t !== null && !AuthService.isTokenExpired(t);
+  });
+  readonly isAdmin = computed(() => {
+    const user = this._user();
+    return user?.admin === true;
   });
 
   // ── public API ────────────────────────────────────────────────────────────
@@ -58,6 +62,10 @@ export class AuthService {
     return this.http.post<void>(`${API_URL}/resend-otp`, { login });
   }
 
+  getCurrentUserProfile(): Observable<UserDto> {
+    return this.http.get<UserDto>(`${API_URL}/me`);
+  }
+
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -76,10 +84,11 @@ export class AuthService {
     if (!res.token) return;
     localStorage.setItem(TOKEN_KEY, res.token);
     const user: UserSummary = {
-      login:  res.login,
-      nom:    res.nom || '',
+      login: res.login,
+      nom: res.nom || '',
       prenom: res.prenom || '',
-      email:  res.email
+      email: res.email,
+      admin: res.admin || false
     };
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     this._token.set(res.token);
@@ -107,7 +116,7 @@ export class AuthService {
       if (!payloadBase64) return true;
 
       // base64url → base64 → JSON
-      const padded  = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
       const decoded = atob(padded);
       const payload = JSON.parse(decoded) as { exp?: number };
 

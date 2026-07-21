@@ -7,6 +7,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import tn.esprit.wifakbankproject.dto.LoginRequest;
 import tn.esprit.wifakbankproject.dto.LoginResponse;
@@ -33,17 +34,33 @@ public class AuthService {
     private final OtpService                otpService;
     private final OtpRepository             otpRepository;
     private final UserRepository             userRepository;
+    private final PasswordEncoder            passwordEncoder;
 
     public LoginResponse login(LoginRequest request, String clientIp) {
         String login = request.getLogin().trim().toLowerCase();
 
         try {
-            // 1. Bind against AD (or embedded LDAP in dev)
-            Authentication auth = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(login, request.getPassword()));
+            User user = userRepository.findByLogin(login).orElse(null);
 
-            // 2. JIT provision / update last_login
-            User user = provisioningService.provisionOrUpdate(login, auth.getPrincipal());
+            if (user != null && user.getAuthType() == User.AuthType.LOCAL) {
+                // Handle LOCAL auth: validate password against DB
+                if (user.getPassword() == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                    auditLogService.log(login, user.getId(), AuditLog.Action.LOGIN_FAILED, clientIp);
+                    throw new AuthenticationException("Identifiants incorrects.");
+                }
+
+                // Update last login for LOCAL user
+                user.setLastLogin(LocalDateTime.now());
+                user = userRepository.save(user);
+            } else {
+                // Handle AD auth or new user (JIT provisioning)
+                // 1. Bind against AD (or embedded LDAP in dev)
+                Authentication auth = authManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(login, request.getPassword()));
+
+                // 2. JIT provision / update last_login
+                user = provisioningService.provisionOrUpdate(login, auth.getPrincipal());
+            }
 
             // 3. Check local status (allows manual INACTIVE override)
             if (user.getStatus() == User.Status.INACTIVE) {
@@ -128,6 +145,7 @@ public class AuthService {
                 .prenom(user.getPrenom())
                 .email(user.getEmail())
                 .otpRequired(false)
+                .admin("admin".equals(user.getLogin()))
                 .build();
     }
 

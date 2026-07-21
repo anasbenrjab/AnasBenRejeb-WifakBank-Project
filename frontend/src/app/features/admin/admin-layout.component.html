@@ -1,0 +1,54 @@
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="brand-icon">🏦</span>
+      <span class="brand-name">Admin</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+        <span aria-hidden="true"></span>
+        <span>Dashboard</span>
+      </a>
+      <a routerLink="/admin/users" routerLinkActive="active" class="nav-item">
+        <span aria-hidden="true"></span>
+        <span>Users</span>
+      </a>
+      <a routerLink="/admin/roles" routerLinkActive="active" class="nav-item">
+        <span aria-hidden="true"></span>
+        <span>Roles</span>
+      </a>
+      <a routerLink="/admin/departments" routerLinkActive="active" class="nav-item">
+        <span aria-hidden="true"></span>
+        <span>Departments</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-name">Wifak Bank Admin</span>
+      </div>
+      <div class="topbar-user">
+        @if (user) {
+          <div class="user-info">
+            <span class="user-avatar">{{ (user.prenom?.[0] ?? '?') }}{{ (user.nom?.[0] ?? '') }}</span>
+            <div class="user-details">
+              <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
+              <span class="user-login">{{ user.login }}</span>
+            </div>
+          </div>
+        }
+        <button class="btn-logout" (click)="logout()">
+          <span aria-hidden="true">↩</span> Déconnexion
+        </button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

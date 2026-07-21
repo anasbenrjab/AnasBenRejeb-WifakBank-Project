@@ -23,4 +23,9 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Long> {
               AND a.status = tn.esprit.wifakbankproject.entity.Application$Status.ACTIVE
             """)
     List<Application> findAuthorizedApplicationsByUserId(@Param("userId") Long userId);
+
+    /**
+     * Checks if there are any user-role assignments for the given role ID
+     */
+    boolean existsByRoleId(Long roleId);
 }

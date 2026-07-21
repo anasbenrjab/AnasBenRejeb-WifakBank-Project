@@ -43,12 +43,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 String login = jwtUtil.extractLogin(token);
 
-                // We trust the JWT; no roles needed for current endpoints.
-                // Role-based access will be added in later modules.
+                List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+                if ("admin".equals(login)) {
+                    authorities = List.of(
+                            new SimpleGrantedAuthority("ROLE_USER"),
+                            new SimpleGrantedAuthority("ROLE_ADMIN")
+                    );
+                }
+
                 var auth = new UsernamePasswordAuthenticationToken(
                         login,
                         null,
-                        List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                        authorities);
 
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);

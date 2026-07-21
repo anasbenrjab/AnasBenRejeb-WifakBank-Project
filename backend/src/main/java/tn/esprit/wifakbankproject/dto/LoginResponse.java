@@ -13,4 +13,5 @@ public class LoginResponse {
     private String prenom;
     private String email;
     private boolean otpRequired;
+    private boolean admin;
 }
