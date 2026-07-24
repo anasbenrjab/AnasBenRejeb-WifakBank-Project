@@ -12,7 +12,7 @@ export class AdminDashboardComponent {
   currentDate = new Date();
   activeFilter: string = 'month';
 
-  // Stats with Wifak Bank colors
+  // Stats with NEW colors
   stats = [
     {
       value: 2,
@@ -20,7 +20,7 @@ export class AdminDashboardComponent {
       percentage: 12.5,
       trend: 'up',
       icon: 'bi bi-people-fill',
-      bgColor: '#47617f',
+      bgColor: '#175194',
       iconColor: '#ffffff',
       progress: 75
     },
@@ -30,7 +30,7 @@ export class AdminDashboardComponent {
       percentage: 5.2,
       trend: 'up',
       icon: 'bi bi-shield-lock-fill',
-      bgColor: '#6f869f',
+      bgColor: '#7093ba',
       iconColor: '#ffffff',
       progress: 55
     },
@@ -40,7 +40,7 @@ export class AdminDashboardComponent {
       percentage: 0,
       trend: 'up',
       icon: 'bi bi-building',
-      bgColor: '#899baa',
+      bgColor: '#a8b2be',
       iconColor: '#ffffff',
       progress: 40
     },
@@ -50,7 +50,7 @@ export class AdminDashboardComponent {
       percentage: 8.7,
       trend: 'up',
       icon: 'bi bi-person-check-fill',
-      bgColor: '#db1b05',
+      bgColor: '#dd1033',
       iconColor: '#ffffff',
       progress: 65
     }
@@ -67,40 +67,40 @@ export class AdminDashboardComponent {
     { label: 'Juil', primary: 80, secondary: 65 }
   ];
 
-  // Activity Feed
+  // Activity Feed with NEW colors
   recentActivities = [
     {
       text: 'Nouvel utilisateur inscrit: Ahmed Ben Ali',
       time: 'Il y a 5 minutes',
-      color: '#47617f',
+      color: '#175194',
       icon: 'bi bi-person-plus',
       type: 'success'
     },
     {
       text: 'Transaction #TX-2024-001 approuvée',
       time: 'Il y a 23 minutes',
-      color: '#899baa',
+      color: '#a8b2be',
       icon: 'bi bi-check-circle',
       type: 'warning'
     },
     {
       text: 'Mise à jour du système effectuée',
       time: 'Il y a 1 heure',
-      color: '#6f869f',
+      color: '#7093ba',
       icon: 'bi bi-arrow-repeat',
       type: 'info'
     },
     {
       text: 'Nouveau dépôt de 12 500 TND',
       time: 'Il y a 2 heures',
-      color: '#c7cec7',
+      color: '#e8bcc3',
       icon: 'bi bi-cash-stack',
       type: 'success'
     },
     {
       text: 'Alerte: Tentative de connexion suspecte',
       time: 'Il y a 3 heures',
-      color: '#db1b05',
+      color: '#dd1033',
       icon: 'bi bi-exclamation-triangle',
       type: 'danger'
     }

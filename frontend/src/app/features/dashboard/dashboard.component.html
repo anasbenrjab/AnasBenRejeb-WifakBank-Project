@@ -3,11 +3,8 @@
   <!-- ── Top nav ─────────────────────────────────────────────────────── -->
   <header class="topbar">
     <div class="topbar-brand">
-      <span class="brand-icon">🏦</span>
-      <span class="brand-name">Wifak Bank</span>
-      <span class="brand-divider">|</span>
-      <span class="brand-subtitle">Portail des Applications</span>
-    </div>
+  <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQl9kA2_bq7A9kQQyqN38quUURtsXheisEuUhlSGzsxYwY4WczkBmOzSNU&s=10" alt="Wifak Bank" class="brand-logo" />
+</div>
 
     <div class="topbar-user">
       @if (user) {
@@ -17,7 +14,7 @@
           </span>
           <div class="user-details">
             <span class="user-name">{{ user.prenom || '' }} {{ user.nom || '' }}</span>
-            <span class="user-login">{{ user.login }}</span>
+            
           </div>
         </div>
       }
