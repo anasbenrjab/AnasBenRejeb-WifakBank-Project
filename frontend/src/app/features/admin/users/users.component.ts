@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AdminService } from '../../../core/services/admin.service';
-import { UserDto, DepartmentDto, ApplicationDto, RoleDto } from '../../../core/models/auth.models';
+import { UserDto, DepartmentDto, ApplicationDto, RoleDto, SubDepartmentDto } from '../../../core/models/auth.models';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -101,6 +101,14 @@ export class UsersComponent implements OnInit {
 
   getDepartmentName(dept?: DepartmentDto): string {
     return dept ? `${dept.code} - ${dept.name}` : 'Non assigné';
+  }
+
+  getSubDepartmentName(subDept?: SubDepartmentDto): string {
+    return subDept ? subDept.name : '';
+  }
+
+  getRoleName(roles?: RoleDto[]): string {
+    return roles && roles.length > 0 ? roles[0].nom : 'Non assigné';
   }
 
   getStatusBadgeClass(status: string): string {

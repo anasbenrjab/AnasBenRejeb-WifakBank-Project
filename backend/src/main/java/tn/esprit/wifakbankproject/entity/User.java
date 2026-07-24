@@ -51,6 +51,10 @@ public class User {
     @JoinColumn(name = "department_id")
     private Department department;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sub_department_id")
+    private SubDepartment subDepartment;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Builder.Default
     private Set<UserRole> userRoles = new HashSet<>();

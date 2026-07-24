@@ -55,7 +55,9 @@
           <tr>
             <th>Utilisateur</th>
             <th>Email</th>
+            <th>Rôle</th>
             <th>Département</th>
+            <th>Sous-département</th>
             <th>Statut</th>
             <th>Actions</th>
           </tr>
@@ -74,6 +76,8 @@
               </td>
               <td><div class="skeleton skeleton-text" style="width: 180px;"></div></td>
               <td><div class="skeleton skeleton-text" style="width: 100px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width: 100px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width: 120px;"></div></td>
               <td><div class="skeleton skeleton-badge"></div></td>
               <td><div style="display: flex; gap: 8px;"><div class="skeleton" style="width: 36px; height: 36px;"></div><div class="skeleton" style="width: 36px; height: 36px;"></div></div></td>
             </tr>
@@ -95,7 +99,9 @@
           <tr>
             <th>Utilisateur</th>
             <th>Email</th>
+            <th>Rôle</th>
             <th>Département</th>
+            <th>Sous-département</th>
             <th>Statut</th>
             <th>Actions</th>
           </tr>
@@ -113,7 +119,9 @@
                 </div>
               </td>
               <td>{{ user.email }}</td>
+              <td>{{ getRoleName(user.roles) }}</td>
               <td>{{ getDepartmentName(user.department) }}</td>
+              <td>{{ getSubDepartmentName(user.subDepartment) }}</td>
               <td><span [class]="getStatusBadgeClass(user.status)">{{ user.status === 'ACTIVE' ? 'Actif' : 'Inactif' }}</span></td>
               <td>
                 <div class="actions-cell">

@@ -21,7 +21,9 @@ public class UserDto {
     private User.AuthType authType;
     private User.Status status;
     private DepartmentDto department;
+    private Long subDepartmentId;
     private List<RoleDto> roles;
+    private Long roleId;
     // Only used for LOCAL user creation/update
     private String password;
 }

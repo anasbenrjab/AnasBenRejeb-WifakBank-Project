@@ -37,6 +37,13 @@ export interface DepartmentDto {
   description?: string;
 }
 
+export interface SubDepartmentDto {
+  id: number;
+  name: string;
+  departmentId: number;
+  departmentName: string;
+}
+
 export interface ApplicationDto {
   id: number;
   code: string;
@@ -62,7 +69,9 @@ export interface UserDto {
   authType: string;
   status: string;
   department?: DepartmentDto;
+  subDepartment?: SubDepartmentDto;
   roles?: RoleDto[];
+  roleId?: number | null;
   password?: string;
 }
 

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { UserDto, DepartmentDto, ApplicationDto, RoleDto } from '../models/auth.models';
+import { UserDto, DepartmentDto, ApplicationDto, RoleDto, SubDepartmentDto } from '../models/auth.models';
 import { environment } from '../../../environments/environment';
 
 const API_URL = `${environment.apiUrl}/api/admin`;
@@ -100,5 +100,26 @@ export class AdminService {
 
   deleteApplication(id: number): Observable<void> {
     return this.http.delete<void>(`${API_URL}/applications/${id}`);
+  }
+
+  // SubDepartments
+  getSubDepartments(): Observable<SubDepartmentDto[]> {
+    return this.http.get<SubDepartmentDto[]>(`${API_URL}/subdepartments`);
+  }
+
+  getSubDepartmentsByDepartment(departmentId: number): Observable<SubDepartmentDto[]> {
+    return this.http.get<SubDepartmentDto[]>(`${API_URL}/subdepartments/by-department/${departmentId}`);
+  }
+
+  createSubDepartment(subDept: Partial<SubDepartmentDto>): Observable<SubDepartmentDto> {
+    return this.http.post<SubDepartmentDto>(`${API_URL}/subdepartments`, subDept);
+  }
+
+  updateSubDepartment(id: number, subDept: Partial<SubDepartmentDto>): Observable<SubDepartmentDto> {
+    return this.http.put<SubDepartmentDto>(`${API_URL}/subdepartments/${id}`, subDept);
+  }
+
+  deleteSubDepartment(id: number): Observable<void> {
+    return this.http.delete<void>(`${API_URL}/subdepartments/${id}`);
   }
 }

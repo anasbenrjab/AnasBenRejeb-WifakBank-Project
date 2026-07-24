@@ -9,11 +9,13 @@ import tn.esprit.wifakbankproject.dto.ApplicationDto;
 import tn.esprit.wifakbankproject.dto.DepartmentDto;
 import tn.esprit.wifakbankproject.dto.RoleDto;
 import tn.esprit.wifakbankproject.dto.UserDto;
+import tn.esprit.wifakbankproject.dto.SubDepartmentDto;
 import tn.esprit.wifakbankproject.entity.Application;
 import tn.esprit.wifakbankproject.entity.Department;
 import tn.esprit.wifakbankproject.entity.Role;
 import tn.esprit.wifakbankproject.entity.User;
 import tn.esprit.wifakbankproject.entity.UserRole;
+import tn.esprit.wifakbankproject.entity.SubDepartment;
 import tn.esprit.wifakbankproject.exception.DuplicateResourceException;
 import tn.esprit.wifakbankproject.exception.ResourceInUseException;
 import tn.esprit.wifakbankproject.exception.ResourceNotFoundException;
@@ -22,6 +24,7 @@ import tn.esprit.wifakbankproject.repository.DepartmentRepository;
 import tn.esprit.wifakbankproject.repository.RoleRepository;
 import tn.esprit.wifakbankproject.repository.UserRepository;
 import tn.esprit.wifakbankproject.repository.UserRoleRepository;
+import tn.esprit.wifakbankproject.repository.SubDepartmentRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,6 +40,7 @@ public class AdminService {
     private final ApplicationRepository applicationRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SubDepartmentRepository subDepartmentRepository;
 
     // Users
     public List<UserDto> getAllUsers() {
@@ -60,6 +64,10 @@ public class AdminService {
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new DuplicateResourceException("Cet email existe déjà.");
         }
+        // Validate roleId is required for new users
+        if (userDto.getRoleId() == null) {
+            throw new IllegalArgumentException("Un rôle est requis pour créer un utilisateur.");
+        }
 
         User.UserBuilder userBuilder = User.builder()
                 .login(userDto.getLogin())
@@ -78,28 +86,40 @@ public class AdminService {
         }
 
         // Handle department if provided
+        Department dept = null;
         if (userDto.getDepartment() != null && userDto.getDepartment().getId() != null) {
-            Department dept = departmentRepository.findById(userDto.getDepartment().getId())
+            dept = departmentRepository.findById(userDto.getDepartment().getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
             userBuilder.department(dept);
         }
 
+        // Handle sub-department if provided
+        if (userDto.getSubDepartmentId() != null) {
+            SubDepartment subDept = subDepartmentRepository.findById(userDto.getSubDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Sub-department not found"));
+            if (dept == null) {
+                throw new IllegalArgumentException("Department is required when assigning a sub-department.");
+            }
+            if (!subDept.getDepartment().getId().equals(dept.getId())) {
+                throw new IllegalArgumentException("Sub-department does not belong to the selected department");
+            }
+            userBuilder.subDepartment(subDept);
+        }
+
+        // Validate role exists
+        Role role = roleRepository.findById(userDto.getRoleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+
         User user = userBuilder.build();
         user = userRepository.save(user);
 
-        // Handle roles if provided
-        if (userDto.getRoles() != null && !userDto.getRoles().isEmpty()) {
-            for (RoleDto roleDto : userDto.getRoles()) {
-                Role role = roleRepository.findById(roleDto.getId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-                UserRole userRole = UserRole.builder()
-                        .user(user)
-                        .role(role)
-                        .build();
-                user.getUserRoles().add(userRole);
-            }
-            user = userRepository.save(user);
-        }
+        // Assign exactly one role to the new user
+        UserRole userRole = UserRole.builder()
+                .user(user)
+                .role(role)
+                .build();
+        user.getUserRoles().add(userRole);
+        user = userRepository.save(user);
 
         return mapToUserDto(user);
     }
@@ -116,6 +136,38 @@ public class AdminService {
                     .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
             user.setDepartment(dept);
         }
+
+        if (userDto.getSubDepartmentId() != null) {
+            SubDepartment subDept = subDepartmentRepository.findById(userDto.getSubDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Sub-department not found"));
+            Department dept = user.getDepartment();
+            if (dept == null) {
+                throw new IllegalArgumentException("Department is required when assigning a sub-department.");
+            }
+            if (!subDept.getDepartment().getId().equals(dept.getId())) {
+                throw new IllegalArgumentException("Sub-department does not belong to the selected department");
+            }
+            user.setSubDepartment(subDept);
+        } else {
+            user.setSubDepartment(null);
+        }
+
+        // Update role if roleId is provided (replace existing roles)
+        if (userDto.getRoleId() != null) {
+            Role newRole = roleRepository.findById(userDto.getRoleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+
+            // Clear existing roles
+            user.getUserRoles().clear();
+
+            // Assign exactly one new role
+            UserRole userRole = UserRole.builder()
+                    .user(user)
+                    .role(newRole)
+                    .build();
+            user.getUserRoles().add(userRole);
+        }
+
         return mapToUserDto(userRepository.save(user));
     }
 
@@ -151,6 +203,9 @@ public class AdminService {
     }
 
     public DepartmentDto createDepartment(DepartmentDto departmentDto) {
+        if (departmentRepository.existsByCode(departmentDto.getCode())) {
+            throw new DuplicateResourceException("Ce code de département existe déjà");
+        }
         Department department = Department.builder()
                 .code(departmentDto.getCode())
                 .name(departmentDto.getName())
@@ -162,6 +217,9 @@ public class AdminService {
     public DepartmentDto updateDepartment(Long id, DepartmentDto departmentDto) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+        if (departmentRepository.existsByCodeAndIdNot(departmentDto.getCode(), id)) {
+            throw new DuplicateResourceException("Ce code de département existe déjà");
+        }
         department.setCode(departmentDto.getCode());
         department.setName(departmentDto.getName());
         department.setDescription(departmentDto.getDescription());
@@ -186,6 +244,9 @@ public class AdminService {
     }
 
     public RoleDto createRole(RoleDto roleDto) {
+        if (roleRepository.existsByNom(roleDto.getNom())) {
+            throw new DuplicateResourceException("Ce nom de rôle existe déjà");
+        }
         Role role = Role.builder()
                 .nom(roleDto.getNom())
                 .description(roleDto.getDescription())
@@ -196,6 +257,9 @@ public class AdminService {
     public RoleDto updateRole(Long id, RoleDto roleDto) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        if (roleRepository.existsByNomAndIdNot(roleDto.getNom(), id)) {
+            throw new DuplicateResourceException("Ce nom de rôle existe déjà");
+        }
 
         role.setNom(roleDto.getNom());
         role.setDescription(roleDto.getDescription());
@@ -310,6 +374,7 @@ public class AdminService {
                 .authType(user.getAuthType())
                 .status(user.getStatus())
                 .department(user.getDepartment() != null ? mapToDepartmentDto(user.getDepartment()) : null)
+                .subDepartmentId(user.getSubDepartment() != null ? user.getSubDepartment().getId() : null)
                 .roles(user.getUserRoles().stream()
                         .map(UserRole::getRole)
                         .map(this::mapToRoleDto)

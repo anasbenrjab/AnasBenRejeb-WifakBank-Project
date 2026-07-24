@@ -81,6 +81,21 @@ export const routes: Routes = [
           import('./features/admin/departments/departments-edit/departments-edit.component').then(m => m.DepartmentsEditComponent)
       },
       {
+        path: 'sub-departments',
+        loadComponent: () =>
+          import('./features/admin/departments/sub-departments/sub-departments.component').then(m => m.SubDepartmentsComponent)
+      },
+      {
+        path: 'sub-departments/new',
+        loadComponent: () =>
+          import('./features/admin/departments/sub-departments/sub-departments-new/sub-departments-new.component').then(m => m.SubDepartmentsNewComponent)
+      },
+      {
+        path: 'sub-departments/:id/edit',
+        loadComponent: () =>
+          import('./features/admin/departments/sub-departments/sub-departments-edit/sub-departments-edit.component').then(m => m.SubDepartmentsEditComponent)
+      },
+      {
         path: 'applications',
         loadComponent: () =>
           import('./features/admin/applications/applications.component').then(m => m.ApplicationsComponent)
