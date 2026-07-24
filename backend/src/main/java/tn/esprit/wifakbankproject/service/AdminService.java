@@ -186,11 +186,7 @@ public class AdminService {
     }
 
     public RoleDto createRole(RoleDto roleDto) {
-        Application application = applicationRepository.findById(roleDto.getApplication().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
-
         Role role = Role.builder()
-                .application(application)
                 .nom(roleDto.getNom())
                 .description(roleDto.getDescription())
                 .build();
@@ -201,10 +197,6 @@ public class AdminService {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        Application application = applicationRepository.findById(roleDto.getApplication().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
-
-        role.setApplication(application);
         role.setNom(roleDto.getNom());
         role.setDescription(roleDto.getDescription());
         return mapToRoleDto(roleRepository.save(role));
@@ -257,6 +249,56 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
+    public ApplicationDto getApplicationById(Long id) {
+        return applicationRepository.findById(id)
+                .map(this::mapToApplicationDto)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+    }
+
+    public ApplicationDto createApplication(ApplicationDto applicationDto) {
+        if (applicationRepository.existsByCode(applicationDto.getCode())) {
+            throw new DuplicateResourceException("Ce code d'application existe déjà");
+        }
+
+        Application application = Application.builder()
+                .code(applicationDto.getCode())
+                .nom(applicationDto.getNom())
+                .description(applicationDto.getDescription())
+                .url(applicationDto.getUrl())
+                .icon(applicationDto.getIcon())
+                .status(applicationDto.getStatus() != null 
+                        ? Application.Status.valueOf(applicationDto.getStatus()) 
+                        : Application.Status.ACTIVE)
+                .build();
+
+        application = applicationRepository.save(application);
+        return mapToApplicationDto(application);
+    }
+
+    public ApplicationDto updateApplication(Long id, ApplicationDto applicationDto) {
+        Application application = applicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+
+        if (applicationRepository.existsByCodeAndIdNot(applicationDto.getCode(), id)) {
+            throw new DuplicateResourceException("Ce code d'application existe déjà");
+        }
+
+        application.setCode(applicationDto.getCode());
+        application.setNom(applicationDto.getNom());
+        application.setDescription(applicationDto.getDescription());
+        application.setUrl(applicationDto.getUrl());
+        application.setIcon(applicationDto.getIcon());
+        if (applicationDto.getStatus() != null) {
+            application.setStatus(Application.Status.valueOf(applicationDto.getStatus()));
+        }
+
+        return mapToApplicationDto(applicationRepository.save(application));
+    }
+
+    public void deleteApplication(Long id) {
+        applicationRepository.deleteById(id);
+    }
+
     // Mappers
     private UserDto mapToUserDto(User user) {
         return UserDto.builder()
@@ -287,7 +329,6 @@ public class AdminService {
     private RoleDto mapToRoleDto(Role role) {
         return RoleDto.builder()
                 .id(role.getId())
-                .application(mapToApplicationDto(role.getApplication()))
                 .nom(role.getNom())
                 .description(role.getDescription())
                 .build();
@@ -301,6 +342,7 @@ public class AdminService {
                 .description(application.getDescription())
                 .url(application.getUrl())
                 .icon(application.getIcon())
+                .status(application.getStatus().name())
                 .build();
     }
 }

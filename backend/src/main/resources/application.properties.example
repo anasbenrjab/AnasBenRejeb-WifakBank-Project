@@ -4,7 +4,7 @@ spring.application.name=WifakBankProject
 spring.profiles.active=dev
 
 # Oracle DataSource
-spring.datasource.url=jdbc:oracle:thin:@YOUR_DB_HOST:1521/YOUR_DB_SERVICE
+spring.datasource.url=jdbc:oracle:thin:@YOUR_DB_HOST:1521/YOUR_DB_SERVICE?useUnicode=true&characterEncoding=UTF-8
 spring.datasource.username=YOUR_DB_USERNAME
 spring.datasource.password=YOUR_DB_PASSWORD
 spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
@@ -13,11 +13,20 @@ spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
 spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.connection.CharSet=UTF-8
+spring.jpa.properties.hibernate.connection.useUnicode=true
+spring.jpa.properties.hibernate.connection.characterEncoding=UTF-8
 
 # Run data.sql AFTER Hibernate has created/updated tables
 spring.sql.init.mode=always
 spring.sql.init.data-locations=classpath:data.sql
 spring.jpa.defer-datasource-initialization=true
+spring.sql.init.encoding=UTF-8
+
+# Server encoding
+server.servlet.encoding.charset=UTF-8
+server.servlet.encoding.enabled=true
+server.servlet.encoding.force=true
 
 # Embedded LDAP
 spring.ldap.embedded.base-dn=dc=example,dc=com

@@ -41,14 +41,59 @@ export const routes: Routes = [
           import('./features/admin/users/users.component').then(m => m.UsersComponent)
       },
       {
+        path: 'users/new',
+        loadComponent: () =>
+          import('./features/admin/users/users-new/users-new.component').then(m => m.UsersNewComponent)
+      },
+      {
+        path: 'users/:id/edit',
+        loadComponent: () =>
+          import('./features/admin/users/users-edit/users-edit.component').then(m => m.UsersEditComponent)
+      },
+      {
         path: 'roles',
         loadComponent: () =>
           import('./features/admin/roles/roles.component').then(m => m.RolesComponent)
       },
       {
+        path: 'roles/new',
+        loadComponent: () =>
+          import('./features/admin/roles/roles-new/roles-new.component').then(m => m.RolesNewComponent)
+      },
+      {
+        path: 'roles/:id/edit',
+        loadComponent: () =>
+          import('./features/admin/roles/roles-edit/roles-edit.component').then(m => m.RolesEditComponent)
+      },
+      {
         path: 'departments',
         loadComponent: () =>
           import('./features/admin/departments/departments.component').then(m => m.DepartmentsComponent)
+      },
+      {
+        path: 'departments/new',
+        loadComponent: () =>
+          import('./features/admin/departments/departments-new/departments-new.component').then(m => m.DepartmentsNewComponent)
+      },
+      {
+        path: 'departments/:id/edit',
+        loadComponent: () =>
+          import('./features/admin/departments/departments-edit/departments-edit.component').then(m => m.DepartmentsEditComponent)
+      },
+      {
+        path: 'applications',
+        loadComponent: () =>
+          import('./features/admin/applications/applications.component').then(m => m.ApplicationsComponent)
+      },
+      {
+        path: 'applications/new',
+        loadComponent: () =>
+          import('./features/admin/applications/applications-new/applications-new.component').then(m => m.ApplicationsNewComponent)
+      },
+      {
+        path: 'applications/:id/edit',
+        loadComponent: () =>
+          import('./features/admin/applications/applications-edit/applications-edit.component').then(m => m.ApplicationsEditComponent)
       }
     ]
   },

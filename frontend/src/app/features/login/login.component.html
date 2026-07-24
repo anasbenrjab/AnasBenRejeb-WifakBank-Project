@@ -3,10 +3,15 @@
 
     <div class="login-header">
       <div class="bank-logo">
-        <span class="logo-icon">🏦</span>
+        <img 
+          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQl9kA2_bq7A9kQQyqN38quUURtsXheisEuUhlSGzsxYwY4WczkBmOzSNU&s=10" 
+          alt="Wifak Bank Logo"
+          class="logo-image"
+        >
       </div>
       <h1 class="bank-name">Wifak Bank</h1>
       <p class="bank-subtitle">Portail des Applications</p>
+      <div class="brand-divider"></div>
     </div>
 
     <!-- ── Step 1: Credentials form ─────────────────────────────────────── -->
@@ -16,33 +21,46 @@
         <!-- Error banner -->
         @if (errorMessage()) {
           <div class="alert alert-error" role="alert">
-            <span class="alert-icon">⚠</span>
+            <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
             {{ errorMessage() }}
           </div>
         }
 
         <!-- Login field -->
         <div class="form-group">
-          <label for="login" class="form-label">Identifiant</label>
-          <input
-            id="login"
-            type="text"
-            class="form-control"
-            [class.invalid]="loginCtrl.invalid && loginCtrl.touched"
-            formControlName="login"
-            placeholder="Votre identifiant AD"
-            autocomplete="username"
-            aria-describedby="login-error"
-          />
+          <label for="login" class="form-label">
+            <i class="bi bi-person"></i>
+            Identifiant
+          </label>
+          <div class="input-wrapper">
+            <i class="bi bi-person input-icon"></i>
+            <input
+              id="login"
+              type="text"
+              class="form-control"
+              [class.invalid]="loginCtrl.invalid && loginCtrl.touched"
+              formControlName="login"
+              placeholder="Votre identifiant AD"
+              autocomplete="username"
+              aria-describedby="login-error"
+            />
+          </div>
           @if (loginCtrl.invalid && loginCtrl.touched) {
-            <span id="login-error" class="field-error">Le login est obligatoire.</span>
+            <span id="login-error" class="field-error">
+              <i class="bi bi-exclamation-circle"></i>
+              Le login est obligatoire.
+            </span>
           }
         </div>
 
         <!-- Password field -->
         <div class="form-group">
-          <label for="password" class="form-label">Mot de passe</label>
-          <div class="password-wrapper">
+          <label for="password" class="form-label">
+            <i class="bi bi-lock"></i>
+            Mot de passe
+          </label>
+          <div class="input-wrapper password-wrapper">
+            <i class="bi bi-lock input-icon"></i>
             <input
               id="password"
               [type]="showPassword() ? 'text' : 'password'"
@@ -59,11 +77,14 @@
               (click)="togglePassword()"
               [attr.aria-label]="showPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
             >
-              {{ showPassword() ? '🙈' : '👁' }}
+              <i class="bi" [class.bi-eye]="!showPassword()" [class.bi-eye-slash]="showPassword()"></i>
             </button>
           </div>
           @if (passwordCtrl.invalid && passwordCtrl.touched) {
-            <span id="password-error" class="field-error">Le mot de passe est obligatoire.</span>
+            <span id="password-error" class="field-error">
+              <i class="bi bi-exclamation-circle"></i>
+              Le mot de passe est obligatoire.
+            </span>
           }
         </div>
 
@@ -78,6 +99,7 @@
             <span class="spinner" aria-hidden="true"></span>
             Connexion en cours…
           } @else {
+            <i class="bi bi-box-arrow-in-right"></i>
             Se connecter
           }
         </button>
@@ -93,6 +115,13 @@
         (back)="onBackToLogin()"
       />
     }
+
+    <!-- Footer -->
+    <div class="login-footer">
+      <span class="footer-version">v2.4.0</span>
+      <span class="footer-divider">•</span>
+      <span class="footer-copyright">© Wifak Bank</span>
+    </div>
 
   </div>
 </div>

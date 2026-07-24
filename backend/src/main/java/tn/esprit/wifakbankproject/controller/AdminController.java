@@ -114,4 +114,25 @@ public class AdminController {
     public ResponseEntity<List<ApplicationDto>> getAllApplications() {
         return ResponseEntity.ok(adminService.getAllApplications());
     }
+
+    @GetMapping("/applications/{id}")
+    public ResponseEntity<ApplicationDto> getApplicationById(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getApplicationById(id));
+    }
+
+    @PostMapping("/applications")
+    public ResponseEntity<ApplicationDto> createApplication(@RequestBody ApplicationDto applicationDto) {
+        return ResponseEntity.ok(adminService.createApplication(applicationDto));
+    }
+
+    @PutMapping("/applications/{id}")
+    public ResponseEntity<ApplicationDto> updateApplication(@PathVariable Long id, @RequestBody ApplicationDto applicationDto) {
+        return ResponseEntity.ok(adminService.updateApplication(id, applicationDto));
+    }
+
+    @DeleteMapping("/applications/{id}")
+    public ResponseEntity<Void> deleteApplication(@PathVariable Long id) {
+        adminService.deleteApplication(id);
+        return ResponseEntity.ok().build();
+    }
 }

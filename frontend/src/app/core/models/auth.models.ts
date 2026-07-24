@@ -44,11 +44,11 @@ export interface ApplicationDto {
   description?: string;
   url?: string;
   icon?: string;
+  status?: string;
 }
 
 export interface RoleDto {
   id: number;
-  application: ApplicationDto;
   nom: string;
   description?: string;
 }

@@ -1,52 +1,131 @@
 <div class="admin-layout">
   <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <span class="brand-icon">🏦</span>
-      <span class="brand-name">Admin</span>
+  <aside class="sidebar" [class.open]="isSidebarOpen">
+    <div class="sidebar-overlay" (click)="closeSidebar()"></div>
+    
+    <div class="sidebar-inner">
+      <!-- Brand Header with Logo -->
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <div class="logo-wrapper">
+            <img 
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQl9kA2_bq7A9kQQyqN38quUURtsXheisEuUhlSGzsxYwY4WczkBmOzSNU&s=10" 
+              alt="Wifak Bank Logo"
+              class="brand-logo-img"
+            >
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">Wifak</span>
+            <span class="brand-sub">Admin</span>
+          </div>
+        </div>
+        <div class="brand-divider"></div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="sidebar-nav">
+        <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">
+            <i class="bi bi-grid-1x2-fill"></i>
+          </span>
+          <span class="nav-text">Tableau de bord</span>
+        </a>
+        
+        <a routerLink="/admin/users" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">
+            <i class="bi bi-people-fill"></i>
+          </span>
+          <span class="nav-text">Utilisateurs</span>
+        </a>
+        
+        <a routerLink="/admin/roles" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">
+            <i class="bi bi-shield-lock-fill"></i>
+          </span>
+          <span class="nav-text">Rôles</span>
+        </a>
+        
+        <a routerLink="/admin/departments" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">
+            <i class="bi bi-building"></i>
+          </span>
+          <span class="nav-text">Départements</span>
+        </a>
+        
+        <a routerLink="/admin/applications" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">
+            <i class="bi bi-widgets"></i>
+          </span>
+          <span class="nav-text">Applications</span>
+        </a>
+      </nav>
+
+      <!-- Sidebar Footer - Only Logout -->
+      
     </div>
-    <nav class="sidebar-nav">
-      <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
-        <span aria-hidden="true"></span>
-        <span>Dashboard</span>
-      </a>
-      <a routerLink="/admin/users" routerLinkActive="active" class="nav-item">
-        <span aria-hidden="true"></span>
-        <span>Users</span>
-      </a>
-      <a routerLink="/admin/roles" routerLinkActive="active" class="nav-item">
-        <span aria-hidden="true"></span>
-        <span>Roles</span>
-      </a>
-      <a routerLink="/admin/departments" routerLinkActive="active" class="nav-item">
-        <span aria-hidden="true"></span>
-        <span>Departments</span>
-      </a>
-    </nav>
   </aside>
 
   <!-- Main Content -->
   <div class="main-wrapper">
+    <!-- Topbar -->
     <header class="topbar">
-      <div class="topbar-brand">
-        <span class="brand-name">Wifak Bank Admin</span>
-      </div>
-      <div class="topbar-user">
-        @if (user) {
-          <div class="user-info">
-            <span class="user-avatar">{{ (user.prenom?.[0] ?? '?') }}{{ (user.nom?.[0] ?? '') }}</span>
-            <div class="user-details">
-              <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
-              <span class="user-login">{{ user.login }}</span>
-            </div>
-          </div>
-        }
-        <button class="btn-logout" (click)="logout()">
-          <span aria-hidden="true">↩</span> Déconnexion
+      <div class="topbar-left">
+        <button class="btn-toggle" (click)="toggleSidebar()" aria-label="Toggle sidebar">
+          <i class="bi bi-list"></i>
         </button>
+        <div class="breadcrumb">
+          <span class="breadcrumb-item active">Tableau de bord</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        
+        <!-- User Profile -->
+        <div class="topbar-user" (click)="toggleUserMenu()">
+          <div class="user-info">
+            @if (user) {
+              <div class="user-avatar" [style.background]="avatarGradient">
+                {{ getUserInitials() }}
+              </div>
+              <div class="user-details">
+                <span class="user-name">{{ user.prenom }} {{ user.nom }}</span>
+                <span class="user-role">Administrateur</span>
+              </div>
+            }
+            <i class="bi bi-chevron-down user-dropdown-icon" 
+               [class.rotated]="showUserMenu"></i>
+          </div>
+
+          <!-- User Dropdown -->
+<div class="user-dropdown" [class.show]="showUserMenu">
+  <div class="dropdown-divider"></div>
+  
+  <a href="#" class="dropdown-item">
+    <i class="bi bi-person"></i>
+    <span>Mon Profil</span>
+  </a>
+  <a href="#" class="dropdown-item">
+    <i class="bi bi-gear"></i>
+    <span>Paramètres</span>
+  </a>
+  <a href="#" class="dropdown-item">
+    <i class="bi bi-question-circle"></i>
+    <span>Aide</span>
+  </a>
+  
+  <div class="dropdown-divider"></div>
+  
+  <!-- SOLID RED LOGOUT BUTTON -->
+  <button class="dropdown-item logout" (click)="logout()">
+    <i class="bi bi-box-arrow-right"></i>
+    <span>Déconnexion</span>
+  </button>
+</div>
+        </div>
       </div>
     </header>
 
+    <!-- Main Content -->
     <main class="main-content">
       <router-outlet />
     </main>

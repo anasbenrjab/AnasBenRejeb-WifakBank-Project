@@ -13,7 +13,7 @@
       @if (user) {
         <div class="user-info">
           <span class="user-avatar" aria-hidden="true">
-            {{ (user.prenom?.[0] ?? '?').toUpperCase() }}{{ (user.nom?.[0] ?? '').toUpperCase() }}
+            {{ (user.prenom || '?')[0].toUpperCase() }}{{ (user.nom || '')[0].toUpperCase() }}
           </span>
           <div class="user-details">
             <span class="user-name">{{ user.prenom || '' }} {{ user.nom || '' }}</span>

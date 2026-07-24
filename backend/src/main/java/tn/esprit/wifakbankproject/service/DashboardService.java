@@ -7,8 +7,8 @@ import tn.esprit.wifakbankproject.dto.AppEntry;
 import tn.esprit.wifakbankproject.entity.Application;
 import tn.esprit.wifakbankproject.entity.User;
 import tn.esprit.wifakbankproject.exception.ResourceNotFoundException;
+import tn.esprit.wifakbankproject.repository.ApplicationRepository;
 import tn.esprit.wifakbankproject.repository.UserRepository;
-import tn.esprit.wifakbankproject.repository.UserRoleRepository;
 
 import java.util.List;
 
@@ -16,15 +16,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final UserRepository     userRepository;
-    private final UserRoleRepository userRoleRepository;
+    private final UserRepository         userRepository;
+    private final ApplicationRepository applicationRepository;
 
     @Transactional(readOnly = true)
     public List<AppEntry> getAuthorizedApps(String login) {
-        User user = userRepository.findByLogin(login)
+        // Verify user exists
+        userRepository.findByLogin(login)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable: " + login));
 
-        List<Application> apps = userRoleRepository.findAuthorizedApplicationsByUserId(user.getId());
+        // Since roles are now standalone, return all ACTIVE applications
+        List<Application> apps = applicationRepository.findByStatus(Application.Status.ACTIVE);
 
         return apps.stream()
                 .map(app -> AppEntry.builder()

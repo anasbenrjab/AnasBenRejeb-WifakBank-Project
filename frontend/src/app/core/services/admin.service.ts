@@ -23,7 +23,7 @@ export class AdminService {
     return this.http.put<UserDto>(`${API_URL}/users/${id}`, user);
   }
 
-  createUser(user: UserDto): Observable<UserDto> {
+  createUser(user: Partial<UserDto>): Observable<UserDto> {
     return this.http.post<UserDto>(`${API_URL}/users`, user);
   }
 
@@ -48,11 +48,11 @@ export class AdminService {
     return this.http.get<DepartmentDto>(`${API_URL}/departments/${id}`);
   }
 
-  createDepartment(dept: DepartmentDto): Observable<DepartmentDto> {
+  createDepartment(dept: Partial<DepartmentDto>): Observable<DepartmentDto> {
     return this.http.post<DepartmentDto>(`${API_URL}/departments`, dept);
   }
 
-  updateDepartment(id: number, dept: DepartmentDto): Observable<DepartmentDto> {
+  updateDepartment(id: number, dept: Partial<DepartmentDto>): Observable<DepartmentDto> {
     return this.http.put<DepartmentDto>(`${API_URL}/departments/${id}`, dept);
   }
 
@@ -69,11 +69,11 @@ export class AdminService {
     return this.http.get<RoleDto>(`${API_URL}/roles/${id}`);
   }
 
-  createRole(role: RoleDto): Observable<RoleDto> {
+  createRole(role: Partial<RoleDto>): Observable<RoleDto> {
     return this.http.post<RoleDto>(`${API_URL}/roles`, role);
   }
 
-  updateRole(id: number, role: RoleDto): Observable<RoleDto> {
+  updateRole(id: number, role: Partial<RoleDto>): Observable<RoleDto> {
     return this.http.put<RoleDto>(`${API_URL}/roles/${id}`, role);
   }
 
@@ -84,5 +84,21 @@ export class AdminService {
   // Applications
   getApplications(): Observable<ApplicationDto[]> {
     return this.http.get<ApplicationDto[]>(`${API_URL}/applications`);
+  }
+
+  getApplication(id: number): Observable<ApplicationDto> {
+    return this.http.get<ApplicationDto>(`${API_URL}/applications/${id}`);
+  }
+
+  createApplication(application: Partial<ApplicationDto>): Observable<ApplicationDto> {
+    return this.http.post<ApplicationDto>(`${API_URL}/applications`, application);
+  }
+
+  updateApplication(id: number, application: Partial<ApplicationDto>): Observable<ApplicationDto> {
+    return this.http.put<ApplicationDto>(`${API_URL}/applications/${id}`, application);
+  }
+
+  deleteApplication(id: number): Observable<void> {
+    return this.http.delete<void>(`${API_URL}/applications/${id}`);
   }
 }

@@ -1,0 +1,59 @@
+<div class="page-header">
+  <button class="btn btn-secondary" (click)="cancel()">← Retour</button>
+  <h1 class="page-title">Ajouter une application</h1>
+  <div></div>
+</div>
+
+@if (loading()) {
+  <div class="state-container">
+    <div class="spinner-large"></div>
+    <p class="state-text">Chargement...</p>
+  </div>
+} @else {
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <div class="card">
+    <form [formGroup]="createForm" (ngSubmit)="saveCreate()" class="form-section">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Code</label>
+          <input type="text" formControlName="code" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" formControlName="nom" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Statut</label>
+          <select formControlName="status" class="form-input">
+            <option value="ACTIVE">Actif</option>
+            <option value="INACTIVE">Inactif</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>URL</label>
+          <input type="text" formControlName="url" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Icon</label>
+          <input type="text" formControlName="icon" class="form-input" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea formControlName="description" class="form-input" rows="3"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+}

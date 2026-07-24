@@ -1,0 +1,48 @@
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Nouveau Département</h2>
+  </div>
+  <div class="card-body">
+    @if (errorMessage()) {
+      <div class="alert alert-error">
+        <span class="alert-icon">⚠</span>
+        {{ errorMessage() }}
+      </div>
+    }
+    <form [formGroup]="createForm" (ngSubmit)="saveCreate()">
+      <div class="form-group">
+        <label class="form-label">Code</label>
+        <input
+          type="text"
+          class="form-input"
+          formControlName="code"
+          placeholder="Code du département"
+        />
+        @if (createForm.get('code')?.invalid && createForm.get('code')?.touched) {
+          <div class="form-error">Le code est obligatoire</div>
+        }
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom</label>
+        <input
+          type="text"
+          class="form-input"
+          formControlName="name"
+          placeholder="Nom du département"
+        />
+        @if (createForm.get('name')?.invalid && createForm.get('name')?.touched) {
+          <div class="form-error">Le nom est obligatoire</div>
+        }
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">
+          @if (loading()) {
+            <span class="spinner-inline"></span>
+          }
+          Créer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

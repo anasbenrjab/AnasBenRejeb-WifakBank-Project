@@ -1,21 +1,20 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { AdminService } from '../../../core/services/admin.service';
-import { AuthService } from '../../../core/services/auth.service';
 import { UserDto, DepartmentDto, ApplicationDto, RoleDto } from '../../../core/models/auth.models';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.css'
 })
 export class UsersComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly authService = inject(AuthService);
-  private readonly fb = inject(FormBuilder);
 
   readonly users = signal<UserDto[]>([]);
   readonly departments = signal<DepartmentDto[]>([]);
@@ -23,31 +22,38 @@ export class UsersComponent implements OnInit {
   readonly roles = signal<RoleDto[]>([]);
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
-  readonly editingUserId = signal<number | null>(null);
-  readonly assigningRoleUserId = signal<number | null>(null);
-  readonly selectedApplicationId = signal<number | null>(null);
-  readonly showCreateForm = signal(false);
-  
+
+  // Filters
+  readonly searchQuery = signal('');
+  readonly statusFilter = signal<string>('all');
+  readonly departmentFilter = signal<number | null>(null);
+
+  // Computed filtered users
+  readonly filteredUsers = computed(() => {
+    let filtered = this.users();
+    const query = this.searchQuery().toLowerCase();
+
+    if (query) {
+      filtered = filtered.filter(u =>
+        u.login.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query) ||
+        u.prenom.toLowerCase().includes(query) ||
+        u.nom.toLowerCase().includes(query)
+      );
+    }
+
+    if (this.statusFilter() !== 'all') {
+      filtered = filtered.filter(u => u.status === this.statusFilter());
+    }
+
+    if (this.departmentFilter() !== null) {
+      filtered = filtered.filter(u => u.department?.id === this.departmentFilter());
+    }
+
+    return filtered;
+  });
+
   readonly currentLogin = computed(() => this.authService.currentUser()?.login);
-
-  editForm = this.fb.nonNullable.group({
-    nom: ['', [Validators.required]],
-    prenom: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
-    status: ['', [Validators.required]],
-    departmentId: [null as number | null]
-  });
-
-  createForm = this.fb.nonNullable.group({
-    login: ['', [Validators.required]],
-    nom: ['', [Validators.required]],
-    prenom: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
-    authType: ['AD', [Validators.required]],
-    status: ['ACTIVE', [Validators.required]],
-    password: ['', []],
-    departmentId: [null as number | null]
-  });
 
   ngOnInit(): void {
     this.loadData();
@@ -82,124 +88,13 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  startEdit(user: UserDto): void {
-    this.editingUserId.set(user.id);
-    this.editForm.patchValue({
-      nom: user.nom,
-      prenom: user.prenom,
-      email: user.email,
-      status: user.status,
-      departmentId: user.department?.id ?? null
-    });
-  }
+  deleteUser(id: number): void {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur?')) return;
 
-  startCreate(): void {
-    this.showCreateForm.set(true);
-    this.createForm.reset();
-    this.createForm.patchValue({
-      authType: 'AD',
-      status: 'ACTIVE'
-    });
-  }
-
-  cancelCreate(): void {
-    this.showCreateForm.set(false);
-    this.createForm.reset();
-  }
-
-  saveCreate(): void {
-    if (this.createForm.invalid) return;
-    const formValue = this.createForm.getRawValue();
-
-    const createData: UserDto = {
-      id: 0,
-      login: formValue.login,
-      nom: formValue.nom,
-      prenom: formValue.prenom,
-      email: formValue.email,
-      authType: formValue.authType,
-      status: formValue.status,
-      department: formValue.departmentId 
-        ? this.departments().find(d => d.id === formValue.departmentId) 
-        : undefined,
-      password: formValue.authType === 'LOCAL' ? formValue.password : undefined
-    };
-
-    this.adminService.createUser(createData).subscribe({
-      next: () => {
-        this.cancelCreate();
-        this.loadData();
-      },
-      error: (err) => {
-        this.errorMessage.set(err?.error?.message || 'Erreur lors de la création de l\'utilisateur');
-      }
-    });
-  }
-
-  cancelEdit(): void {
-    this.editingUserId.set(null);
-    this.editForm.reset();
-  }
-
-  saveUser(): void {
-    if (this.editForm.invalid) return;
-
-    const id = this.editingUserId()!;
-    const formValue = this.editForm.getRawValue();
-    
-    const updateData: Partial<UserDto> = {
-      nom: formValue.nom,
-      prenom: formValue.prenom,
-      email: formValue.email,
-      status: formValue.status,
-      department: formValue.departmentId 
-        ? this.departments().find(d => d.id === formValue.departmentId) 
-        : undefined
-    };
-
-    this.adminService.updateUser(id, updateData).subscribe({
-      next: () => {
-        this.cancelEdit();
-        this.loadData();
-      },
-      error: () => {
-        this.errorMessage.set('Erreur lors de la mise à jour de l\'utilisateur');
-      }
-    });
-  }
-
-  startAssignRole(user: UserDto): void {
-    this.assigningRoleUserId.set(user.id);
-    this.selectedApplicationId.set(null);
-  }
-
-  cancelAssignRole(): void {
-    this.assigningRoleUserId.set(null);
-    this.selectedApplicationId.set(null);
-  }
-
-  assignRole(roleId: number): void {
-    const userId = this.assigningRoleUserId()!;
-    this.adminService.assignRoleToUser(userId, roleId).subscribe({
-      next: () => {
-        this.cancelAssignRole();
-        this.loadData();
-      },
-      error: () => {
-        this.errorMessage.set('Erreur lors de l\'assignation du rôle');
-      }
-    });
-  }
-
-  revokeRole(userId: number, roleId: number): void {
-    if (!confirm('Êtes-vous sûr de vouloir révoquer ce rôle?')) return;
-
-    this.adminService.revokeRoleFromUser(userId, roleId).subscribe({
-      next: () => {
-        this.loadData();
-      },
-      error: () => {
-        this.errorMessage.set('Erreur lors de la révocation du rôle');
+    this.adminService.deleteUser(id).subscribe({
+      next: () => this.loadData(),
+      error: (err: any) => {
+        this.errorMessage.set(err?.error?.message || 'Erreur lors de la suppression de l’utilisateur');
       }
     });
   }
@@ -212,35 +107,7 @@ export class UsersComponent implements OnInit {
     return status === 'ACTIVE' ? 'badge badge-active' : 'badge badge-inactive';
   }
 
-  getRolesByApplication(user: UserDto): { app: ApplicationDto, roles: RoleDto[] }[] {
-    const appRoles = new Map<number, { app: ApplicationDto, roles: RoleDto[] }>();
-    for (const app of this.applications()) {
-      appRoles.set(app.id, { app, roles: [] });
-    }
-    if (user.roles) {
-      for (const role of user.roles) {
-        const entry = appRoles.get(role.application.id);
-        if (entry) {
-          entry.roles.push(role);
-        }
-      }
-    }
-    return Array.from(appRoles.values()).filter(entry => entry.roles.length > 0);
-  }
-
-  getAvailableRolesForApplication(appId: number, user: UserDto): RoleDto[] {
-    const userRoleIds = new Set(user.roles?.map(r => r.id) || []);
-    return this.roles().filter(r => r.application.id === appId && !userRoleIds.has(r.id));
-  }
-
-  deleteUser(id: number): void {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur?')) return;
-
-    this.adminService.deleteUser(id).subscribe({
-      next: () => this.loadData(),
-      error: (err: any) => {
-        this.errorMessage.set(err?.error?.message || 'Erreur lors de la suppression de l\'utilisateur');
-      }
-    });
+  parseNumber(value: string): number {
+    return Number(value);
   }
 }

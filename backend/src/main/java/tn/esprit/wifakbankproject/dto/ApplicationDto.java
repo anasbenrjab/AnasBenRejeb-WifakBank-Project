@@ -16,4 +16,5 @@ public class ApplicationDto {
     private String description;
     private String url;
     private String icon;
+    private String status;
 }

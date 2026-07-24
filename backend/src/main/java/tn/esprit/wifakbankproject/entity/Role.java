@@ -13,10 +13,6 @@ public class Role {
     @SequenceGenerator(name = "roles_seq", sequenceName = "ROLES_SEQ", allocationSize = 1)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "APPLICATION_ID", nullable = false)
-    private Application application;
-
     @Column(nullable = false, length = 100)
     private String nom;
 

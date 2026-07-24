@@ -1,34 +1,93 @@
-<div class="page-header">
-  <h1 class="page-title">Dashboard Overview</h1>
-</div>
+<div class="dashboard-container">
+  
+  <!-- ========== HERO HEADER ========== -->
+  <div class="hero-section fade-in">
+    <div class="hero-content">
+      <div class="hero-left">
+        <div class="greeting-badge">
+          <i class="bi bi-shield-check"></i>
+          Wifak Bank Administration
+        </div>
+        <h1 class="hero-title">
+          Tableau de bord
+        </h1>
+        <p class="hero-subtitle">
+          <i class="bi bi-calendar-event"></i>
+          {{ currentDate | date:'EEEE, dd MMMM yyyy' }}
+        </p>
+      </div>
+      <div class="hero-right">
+      
+      </div>
+    </div>
+  </div>
 
-<div class="stats-grid">
-  <div class="stat-card">
-    <div class="stat-icon"></div>
-    <div class="stat-content">
-      <div class="stat-value">2</div>
-      <div class="stat-label">Total Users</div>
+  <!-- ========== STATS GRID ========== -->
+  <div class="stats-grid">
+    <div class="stat-card" *ngFor="let stat of stats; let i = index"
+         [style.animation-delay]="(i * 100) + 'ms'">
+      <div class="stat-top">
+        <div class="stat-icon-wrapper" [style.background]="stat.bgColor">
+          <i [class]="stat.icon" [style.color]="stat.iconColor"></i>
+        </div>
+        <div class="stat-trend" [class]="stat.trend">
+          <i class="bi" [class.bi-arrow-up]="stat.trend === 'up'"
+                       [class.bi-arrow-down]="stat.trend === 'down'"></i>
+          {{ stat.percentage }}%
+        </div>
+      </div>
+      <div class="stat-value">{{ stat.value }}</div>
+      <div class="stat-label">{{ stat.label }}</div>
+      <div class="stat-progress" *ngIf="stat.progress">
+        <div class="progress-bar" [style.width]="stat.progress + '%'"
+             [style.background]="stat.bgColor"></div>
+      </div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-icon"></div>
-    <div class="stat-content">
-      <div class="stat-value">11</div>
-      <div class="stat-label">Total Roles</div>
+
+  <!-- ========== CHART SECTION ========== -->
+  <div class="chart-section fade-in">
+    <div class="chart-header">
+      <div class="chart-header-left">
+        <div class="chart-icon">
+          <i class="bi bi-graph-up"></i>
+        </div>
+        <div>
+          <h5 class="chart-title">Évolution des Activités</h5>
+          <span class="chart-subtitle">Performance mensuelle</span>
+        </div>
+      </div>
+      <div class="chart-filters">
+        <button class="filter-btn" [class.active]="activeFilter === 'week'" 
+                (click)="activeFilter = 'week'">7j</button>
+        <button class="filter-btn" [class.active]="activeFilter === 'month'" 
+                (click)="activeFilter = 'month'">30j</button>
+        <button class="filter-btn" [class.active]="activeFilter === 'year'" 
+                (click)="activeFilter = 'year'">90j</button>
+      </div>
+    </div>
+    <div class="chart-body">
+      <div class="chart-container">
+        <div class="chart-bars">
+          <div class="bar-group" *ngFor="let data of chartData; let i = index">
+            <div class="bar-column">
+              <div class="bar bar-primary" [style.height]="data.primary + '%'"
+                   [style.animation-delay]="(i * 50) + 'ms'"></div>
+              <div class="bar bar-secondary" [style.height]="data.secondary + '%'"
+                   [style.animation-delay]="(i * 50 + 100) + 'ms'"></div>
+            </div>
+            <span class="bar-label">{{ data.label }}</span>
+          </div>
+        </div>
+        <div class="chart-legend">
+          <span><span class="legend-dot primary"></span>Revenus</span>
+          <span><span class="legend-dot secondary"></span>Dépenses</span>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="stat-card">
-    <div class="stat-icon"></div>
-    <div class="stat-content">
-      <div class="stat-value">4</div>
-      <div class="stat-label">Total Departments</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon"></div>
-    <div class="stat-content">
-      <div class="stat-value">2</div>
-      <div class="stat-label">Active Users</div>
-    </div>
-  </div>
+
+  <!-- ========== ACTIVITY FEED ========== -->
+  
+
 </div>

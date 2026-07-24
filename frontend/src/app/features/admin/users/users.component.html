@@ -1,84 +1,54 @@
 <div class="page-header">
   <h1 class="page-title">Manage Users</h1>
-  <button class="btn btn-primary" (click)="startCreate()" [disabled]="showCreateForm() || editingUserId()">
-    + Ajouter un utilisateur
-  </button>
+  <a class="btn btn-primary" routerLink="/admin/users/new">
+    <i class="bi bi-plus-lg mr-2"></i>
+    Ajouter un utilisateur
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="filters-container">
+  <div class="search-box">
+    <i class="bi bi-search search-icon"></i>
+    <input
+      type="text"
+      placeholder="Rechercher par login, email ou nom..."
+      class="search-input"
+      [value]="searchQuery()"
+      (input)="searchQuery.set($any($event.target).value)"
+    />
+  </div>
+  <div class="filters-row">
+    <div class="filter-select">
+      <label class="filter-label">Statut</label>
+      <select
+        class="form-input"
+        [value]="statusFilter()"
+        (change)="statusFilter.set($any($event.target).value)"
+      >
+        <option value="all">Tous</option>
+        <option value="ACTIVE">Actif</option>
+        <option value="INACTIVE">Inactif</option>
+      </select>
+    </div>
+    <div class="filter-select">
+      <label class="filter-label">Département</label>
+      <select
+        class="form-input"
+        [value]="departmentFilter()"
+        (change)="departmentFilter.set($any($event.target).value ? parseNumber($any($event.target).value) : null)"
+      >
+        <option [value]="null">Tous</option>
+        @for (dept of departments(); track dept.id) {
+          <option [value]="dept.id">{{ getDepartmentName(dept) }}</option>
+        }
+      </select>
+    </div>
+  </div>
 </div>
 
 @if (loading()) {
-  <div class="state-container">
-    <div class="spinner-large"></div>
-    <p class="state-text">Chargement des utilisateurs...</p>
-  </div>
-} @else if (errorMessage()) {
-  <div class="alert alert-error">
-    <span class="alert-icon">⚠</span>
-    {{ errorMessage() }}
-  </div>
-} @else {
   <div class="card">
-    @if (showCreateForm()) {
-      <div class="form-section">
-        <h3 class="form-title">Ajouter un utilisateur</h3>
-        <form [formGroup]="createForm" (ngSubmit)="saveCreate()">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Login</label>
-              <input type="text" formControlName="login" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label>Type d'authentification</label>
-              <select formControlName="authType" class="form-input">
-                <option value="AD">AD / LDAP</option>
-                <option value="LOCAL">Local</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Prénom</label>
-              <input type="text" formControlName="prenom" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label>Nom</label>
-              <input type="text" formControlName="nom" class="form-input" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" formControlName="email" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label>Statut</label>
-              <select formControlName="status" class="form-input">
-                <option value="ACTIVE">Actif</option>
-                <option value="INACTIVE">Inactif</option>
-              </select>
-            </div>
-          </div>
-          @if (createForm.value.authType === 'LOCAL') {
-            <div class="form-group">
-              <label>Mot de passe</label>
-              <input type="password" formControlName="password" class="form-input" />
-            </div>
-          }
-          <div class="form-group">
-            <label>Département</label>
-            <select formControlName="departmentId" class="form-input">
-              <option [ngValue]="null">Non assigné</option>
-              @for (dept of departments(); track dept.id) {
-                <option [ngValue]="dept.id">{{ getDepartmentName(dept) }}</option>
-              }
-            </select>
-          </div>
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" (click)="cancelCreate()">Annuler</button>
-            <button type="submit" class="btn btn-primary">Enregistrer</button>
-          </div>
-        </form>
-      </div>
-    }
     <div class="table-container">
       <table class="table">
         <thead>
@@ -91,69 +61,80 @@
           </tr>
         </thead>
         <tbody>
-          @for (user of users(); track user.id) {
+          @for (i of [1,2,3,4,5]; track i) {
             <tr>
-              @if (editingUserId() === user.id) {
-                <td colspan="5">
-                  <form [formGroup]="editForm" (ngSubmit)="saveUser()" class="edit-form">
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label>Prénom</label>
-                        <input type="text" formControlName="prenom" class="form-input" />
-                      </div>
-                      <div class="form-group">
-                        <label>Nom</label>
-                        <input type="text" formControlName="nom" class="form-input" />
-                      </div>
-                    </div>
-                    <div class="form-row">
-                      <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" formControlName="email" class="form-input" />
-                      </div>
-                      <div class="form-group">
-                        <label>Statut</label>
-                        <select formControlName="status" class="form-input">
-                          <option value="ACTIVE">Actif</option>
-                          <option value="INACTIVE">Inactif</option>
-                        </select>
-                      </div>
-                      <div class="form-group">
-                        <label>Département</label>
-                        <select formControlName="departmentId" class="form-input">
-                          <option [ngValue]="null">Non assigné</option>
-                          @for (dept of departments(); track dept.id) {
-                            <option [ngValue]="dept.id">{{ getDepartmentName(dept) }}</option>
-                          }
-                        </select>
-                      </div>
-                    </div>
-                    <div class="form-actions">
-                      <button type="button" class="btn btn-secondary" (click)="cancelEdit()">Annuler</button>
-                      <button type="submit" class="btn btn-primary">Enregistrer</button>
-                    </div>
-                  </form>
-                </td>
-              } @else {
-                <td>
-                  <div class="user-info-cell">
-                    <span class="user-avatar-small">{{ (user.prenom?.[0] ?? '?') }}{{ (user.nom?.[0] ?? '') }}</span>
-                    <div class="user-details-small">
-                      <div class="user-name-small">{{ user.prenom }} {{ user.nom }}</div>
-                      <div class="user-login-small">{{ user.login }}</div>
-                    </div>
+              <td>
+                <div class="user-info-cell">
+                  <span class="skeleton skeleton-avatar"></span>
+                  <div class="user-details-small">
+                    <div class="skeleton skeleton-text" style="width: 120px;"></div>
+                    <div class="skeleton skeleton-text-sm" style="width: 80px; margin-top: 4px;"></div>
                   </div>
-                </td>
-                <td>{{ user.email }}</td>
-                <td>{{ getDepartmentName(user.department) }}</td>
-                <td><span [class]="getStatusBadgeClass(user.status)">{{ user.status === 'ACTIVE' ? 'Actif' : 'Inactif' }}</span></td>
-                <td>
-                  <button class="btn btn-small btn-secondary" (click)="startEdit(user)">Modifier</button>
+                </div>
+              </td>
+              <td><div class="skeleton skeleton-text" style="width: 180px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width: 100px;"></div></td>
+              <td><div class="skeleton skeleton-badge"></div></td>
+              <td><div style="display: flex; gap: 8px;"><div class="skeleton" style="width: 36px; height: 36px;"></div><div class="skeleton" style="width: 36px; height: 36px;"></div></div></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+} @else if (errorMessage()) {
+  <div class="alert alert-error">
+    <span class="alert-icon">⚠</span>
+    {{ errorMessage() }}
+  </div>
+} @else {
+  <div class="card">
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Email</th>
+            <th>Département</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of filteredUsers(); track user.id) {
+            <tr>
+              <td>
+                <div class="user-info-cell">
+                  <span class="user-avatar-small">{{ (user.prenom || '?')[0].toUpperCase() }}{{ (user.nom || '')[0].toUpperCase() }}</span>
+                  <div class="user-details-small">
+                    <div class="user-name-small">{{ user.prenom }} {{ user.nom }}</div>
+                    <div class="user-login-small">{{ user.login }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ user.email }}</td>
+              <td>{{ getDepartmentName(user.department) }}</td>
+              <td><span [class]="getStatusBadgeClass(user.status)">{{ user.status === 'ACTIVE' ? 'Actif' : 'Inactif' }}</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button
+                    class="btn-icon btn-secondary"
+                    [routerLink]="['/admin/users', user.id, 'edit']"
+                    title="Modifier"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
                   @if (user.login !== currentLogin()) {
-                    <button class="btn btn-small btn-danger" (click)="deleteUser(user.id)">Supprimer</button>
+                    <button
+                      class="btn-icon btn-danger"
+                      (click)="deleteUser(user.id)"
+                      title="Supprimer"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
                   }
-                </td>
-              }
+                </div>
+              </td>
             </tr>
           }
         </tbody>

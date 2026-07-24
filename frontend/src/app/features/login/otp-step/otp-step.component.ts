@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
@@ -12,7 +12,7 @@ import { HttpErrorResponse } from '@angular/common/http';
   templateUrl: './otp-step.component.html',
   styleUrl: './otp-step.component.css'
 })
-export class OtpStepComponent implements OnInit {
+export class OtpStepComponent implements OnInit, OnDestroy {
   /** The login returned from step 1 — passed in by the parent. */
   @Input({ required: true }) login!: string;
 
@@ -46,14 +46,27 @@ export class OtpStepComponent implements OnInit {
     this.startCooldown();
   }
 
+  ngOnDestroy(): void {
+    this.clearCooldown();
+  }
+
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      // Shake animation for invalid input
+      const input = document.getElementById('otp-code');
+      if (input) {
+        input.style.animation = 'shake 0.4s ease';
+        setTimeout(() => {
+          input.style.animation = '';
+        }, 400);
+      }
       return;
     }
 
     this.loading.set(true);
     this.errorMessage.set(null);
+    this.successMessage.set(null);
 
     const code = this.form.getRawValue().code;
 
@@ -70,6 +83,13 @@ export class OtpStepComponent implements OnInit {
         );
         // Clear the input so the user can re-type
         this.form.reset();
+        // Focus the input for quick retry
+        setTimeout(() => {
+          const input = document.getElementById('otp-code');
+          if (input) {
+            input.focus();
+          }
+        }, 100);
       }
     });
   }
@@ -87,6 +107,13 @@ export class OtpStepComponent implements OnInit {
         this.successMessage.set('Un nouveau code a été envoyé à votre adresse e-mail.');
         this.form.reset();
         this.startCooldown();
+        // Focus the input for the new code
+        setTimeout(() => {
+          const input = document.getElementById('otp-code');
+          if (input) {
+            input.focus();
+          }
+        }, 300);
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);

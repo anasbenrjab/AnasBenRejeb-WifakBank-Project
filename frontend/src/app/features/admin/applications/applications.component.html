@@ -1,0 +1,123 @@
+<div class="page-header">
+  <h1 class="page-title">Manage Applications</h1>
+  <a class="btn btn-primary" routerLink="/admin/applications/new">
+    <i class="bi bi-plus-lg mr-2"></i>
+    Ajouter une application
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="filters-container">
+  <div class="search-box">
+    <i class="bi bi-search search-icon"></i>
+    <input
+      type="text"
+      placeholder="Rechercher par code, nom ou description..."
+      class="search-input"
+      [value]="searchQuery()"
+      (input)="searchQuery.set($any($event.target).value)"
+    />
+  </div>
+  <div class="filters-row">
+    <div class="filter-select">
+      <label class="filter-label">Statut</label>
+      <select
+        class="form-input"
+        [value]="statusFilter()"
+        (change)="statusFilter.set($any($event.target).value)"
+      >
+        <option value="all">Tous</option>
+        <option value="ACTIVE">Actif</option>
+        <option value="INACTIVE">Inactif</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="card">
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Nom</th>
+            <th>Description</th>
+            <th>URL</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of [1,2,3,4,5]; track i) {
+            <tr>
+              <td><div class="skeleton skeleton-badge"></div></td>
+              <td><div class="skeleton skeleton-text" style="width: 150px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width: 250px;"></div></td>
+              <td><div class="skeleton skeleton-text" style="width: 200px;"></div></td>
+              <td><div class="skeleton skeleton-badge"></div></td>
+              <td><div style="display: flex; gap: 8px;"><div class="skeleton" style="width: 36px; height: 36px;"></div><div class="skeleton" style="width: 36px; height: 36px;"></div></div></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+} @else if (errorMessage()) {
+  <div class="alert alert-error">
+    <span class="alert-icon">⚠</span>
+    {{ errorMessage() }}
+  </div>
+} @else {
+  <div class="card">
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Nom</th>
+            <th>Description</th>
+            <th>URL</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (app of filteredApplications(); track app.id) {
+            <tr>
+              <td><span class="badge-code">{{ app.code }}</span></td>
+              <td>{{ app.nom }}</td>
+              <td>{{ app.description || '-' }}</td>
+              <td>
+                @if (app.url) {
+                  <a [href]="app.url" target="_blank" rel="noopener noreferrer">{{ app.url }}</a>
+                } @else {
+                  '-'
+                }
+              </td>
+              <td><span [class]="getStatusBadgeClass(app.status || '')">{{ (app.status === 'ACTIVE') ? 'Actif' : 'Inactif' }}</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button
+                    class="btn-icon btn-secondary"
+                    [routerLink]="['/admin/applications', app.id, 'edit']"
+                    title="Modifier"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    class="btn-icon btn-danger"
+                    (click)="deleteApplication(app.id)"
+                    title="Supprimer"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}

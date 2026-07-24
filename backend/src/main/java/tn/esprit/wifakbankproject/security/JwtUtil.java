@@ -16,9 +16,10 @@ public class JwtUtil {
     private final long      expirationMs;
 
     public JwtUtil(
-            @Value("${app.jwt.secret}") String base64Secret,
+            @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration-ms}") long expirationMs) {
-        this.secretKey    = Keys.hmacShaKeyFor(Decoders.BASE64.decode(base64Secret));
+        // Use secret directly if not base64 encoded, fall back to base64 decode if needed
+        this.secretKey    = Keys.hmacShaKeyFor(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
 

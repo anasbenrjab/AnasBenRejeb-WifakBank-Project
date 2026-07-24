@@ -2,18 +2,21 @@
 
   <!-- Step indicator -->
   <div class="otp-header">
-    <div class="otp-icon" aria-hidden="true">✉️</div>
+    <div class="otp-icon-wrapper">
+      <i class="bi bi-shield-lock-fill otp-icon"></i>
+    </div>
     <h2 class="otp-title">Vérification en deux étapes</h2>
     <p class="otp-subtitle">
       Un code à 6 chiffres a été envoyé à l'adresse e-mail associée à
       <strong>{{ login }}</strong>. Saisissez-le ci-dessous.
     </p>
+    <div class="otp-divider"></div>
   </div>
 
   <!-- Success banner -->
   @if (successMessage()) {
     <div class="alert alert-success" role="status" aria-live="polite">
-      <span class="alert-icon">✓</span>
+      <i class="bi bi-check-circle-fill alert-icon"></i>
       {{ successMessage() }}
     </div>
   }
@@ -21,29 +24,38 @@
   <!-- Error banner -->
   @if (errorMessage()) {
     <div class="alert alert-error" role="alert">
-      <span class="alert-icon">⚠</span>
+      <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
       {{ errorMessage() }}
     </div>
   }
 
   <!-- OTP input -->
   <div class="form-group">
-    <label for="otp-code" class="form-label">Code de vérification</label>
-    <input
-      id="otp-code"
-      type="text"
-      inputmode="numeric"
-      class="form-control otp-input"
-      [class.invalid]="codeCtrl.invalid && codeCtrl.touched"
-      formControlName="code"
-      placeholder="000000"
-      maxlength="6"
-      autocomplete="one-time-code"
-      aria-describedby="otp-error"
-    />
+    <label for="otp-code" class="form-label">
+      <i class="bi bi-key"></i>
+      Code de vérification
+    </label>
+    <div class="input-wrapper">
+      <i class="bi bi-shield-check input-icon"></i>
+      <input
+        id="otp-code"
+        type="text"
+        inputmode="numeric"
+        class="form-control otp-input"
+        [class.invalid]="codeCtrl.invalid && codeCtrl.touched"
+        formControlName="code"
+        placeholder="000000"
+        maxlength="6"
+        autocomplete="one-time-code"
+        aria-describedby="otp-error"
+      />
+    </div>
     @if (codeCtrl.invalid && codeCtrl.touched) {
       <span id="otp-error" class="field-error">
-        @if (codeCtrl.hasError('required')) { Le code est obligatoire. }
+        <i class="bi bi-exclamation-circle"></i>
+        @if (codeCtrl.hasError('required')) { 
+          Le code est obligatoire. 
+        }
         @else if (codeCtrl.hasError('pattern') || codeCtrl.hasError('minlength') || codeCtrl.hasError('maxlength')) {
           Le code doit contenir exactement 6 chiffres.
         }
@@ -62,6 +74,7 @@
       <span class="spinner" aria-hidden="true"></span>
       Vérification…
     } @else {
+      <i class="bi bi-check-circle"></i>
       Vérifier le code
     }
   </button>
@@ -74,8 +87,9 @@
       [disabled]="resendCooldown() > 0 || loading()"
       (click)="onResend()"
     >
+      <i class="bi bi-arrow-repeat" [class.spinning]="loading()"></i>
       @if (resendCooldown() > 0) {
-        Renvoyer le code ({{ resendCooldown() }}s)
+        Renvoyer ({{ resendCooldown() }}s)
       } @else {
         Renvoyer le code
       }
@@ -87,7 +101,8 @@
       [disabled]="loading()"
       (click)="onBack()"
     >
-      ← Retour
+      <i class="bi bi-arrow-left"></i>
+      Retour
     </button>
   </div>
 

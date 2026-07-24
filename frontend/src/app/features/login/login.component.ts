@@ -24,9 +24,7 @@ export class LoginComponent {
   readonly showPassword = signal(false);
 
   // ── OTP step state ────────────────────────────────────────────────────────
-  /** When true, hide the credentials form and show the OTP form. */
   readonly otpRequired  = signal(false);
-  /** Login stored after step 1 succeeds — passed to the OTP step. */
   readonly pendingLogin = signal<string>('');
 
   form = this.fb.nonNullable.group({
@@ -52,11 +50,9 @@ export class LoginComponent {
       next: res => {
         this.loading.set(false);
         if (res.otpRequired) {
-          // Store login for step 2, then show OTP screen
           this.pendingLogin.set(res.login);
           this.otpRequired.set(true);
         } else {
-          // Fallback: if backend skips OTP (shouldn't happen), go straight to dashboard
           this.redirectAfterLogin();
         }
       },
