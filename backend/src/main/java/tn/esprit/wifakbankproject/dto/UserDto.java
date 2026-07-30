@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import tn.esprit.wifakbankproject.entity.User;
+import tn.esprit.wifakbankproject.entity.UserStatus;
 
 import java.util.List;
 
@@ -19,11 +20,13 @@ public class UserDto {
     private String prenom;
     private String email;
     private User.AuthType authType;
-    private User.Status status;
+    private UserStatus status;
     private DepartmentDto department;
     private Long subDepartmentId;
+    private SubDepartmentDto subDepartment;
     private List<RoleDto> roles;
     private Long roleId;
+    private List<Long> roleIds;
     // Only used for LOCAL user creation/update
     private String password;
 }

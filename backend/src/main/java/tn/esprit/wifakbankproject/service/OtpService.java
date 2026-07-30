@@ -21,7 +21,7 @@ public class OtpService {
     private final OtpRepository  otpRepository;
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${app.mail.from}")
     private String fromAddress;
 
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -51,15 +51,20 @@ public class OtpService {
         log.info("OTP generated for login '{}', expires at {}", login, otp.getExpiryTime());
 
         try {
-            sendEmail(email, code);
+            sendEmail(email, code, login);
         } catch (Exception e) {
             log.warn("Email send failed, OTP for {} is: {}", login, code, e);
+            Throwable cause = e;
+            while (cause != null) {
+                log.warn("Mail error cause: {} -> {}", cause.getClass().getName(), cause.getMessage());
+                cause = cause.getCause();
+            }
         }
     }
 
     // ── private ──────────────────────────────────────────────────────────────
 
-    private void sendEmail(String to, String code) {
+    private void sendEmail(String to, String code, String login) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(to);
@@ -73,6 +78,6 @@ public class OtpService {
                 "— L'équipe WifakBank"
         );
         mailSender.send(message);
-        log.info("OTP email sent to '{}'", to);
+        log.info("OTP email sent to '{}' (login: '{}')", to, login);
     }
 }

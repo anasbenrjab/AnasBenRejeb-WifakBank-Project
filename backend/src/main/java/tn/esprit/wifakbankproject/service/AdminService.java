@@ -14,7 +14,7 @@ import tn.esprit.wifakbankproject.entity.Application;
 import tn.esprit.wifakbankproject.entity.Department;
 import tn.esprit.wifakbankproject.entity.Role;
 import tn.esprit.wifakbankproject.entity.User;
-import tn.esprit.wifakbankproject.entity.UserRole;
+import tn.esprit.wifakbankproject.entity.UserStatus;
 import tn.esprit.wifakbankproject.entity.SubDepartment;
 import tn.esprit.wifakbankproject.exception.DuplicateResourceException;
 import tn.esprit.wifakbankproject.exception.ResourceInUseException;
@@ -23,10 +23,11 @@ import tn.esprit.wifakbankproject.repository.ApplicationRepository;
 import tn.esprit.wifakbankproject.repository.DepartmentRepository;
 import tn.esprit.wifakbankproject.repository.RoleRepository;
 import tn.esprit.wifakbankproject.repository.UserRepository;
-import tn.esprit.wifakbankproject.repository.UserRoleRepository;
 import tn.esprit.wifakbankproject.repository.SubDepartmentRepository;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,7 +39,6 @@ public class AdminService {
     private final DepartmentRepository departmentRepository;
     private final RoleRepository roleRepository;
     private final ApplicationRepository applicationRepository;
-    private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final SubDepartmentRepository subDepartmentRepository;
 
@@ -75,7 +75,7 @@ public class AdminService {
                 .prenom(userDto.getPrenom())
                 .email(userDto.getEmail())
                 .authType(userDto.getAuthType())
-                .status(userDto.getStatus() != null ? userDto.getStatus() : User.Status.ACTIVE);
+                .status(userDto.getStatus() != null ? userDto.getStatus() : UserStatus.ACTIF);
 
         // Handle password for LOCAL auth type
         if (userDto.getAuthType() == User.AuthType.LOCAL) {
@@ -111,14 +111,7 @@ public class AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         User user = userBuilder.build();
-        user = userRepository.save(user);
-
-        // Assign exactly one role to the new user
-        UserRole userRole = UserRole.builder()
-                .user(user)
-                .role(role)
-                .build();
-        user.getUserRoles().add(userRole);
+        user.getRoles().add(role);
         user = userRepository.save(user);
 
         return mapToUserDto(user);
@@ -135,37 +128,44 @@ public class AdminService {
             Department dept = departmentRepository.findById(userDto.getDepartment().getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
             user.setDepartment(dept);
-        }
 
-        if (userDto.getSubDepartmentId() != null) {
-            SubDepartment subDept = subDepartmentRepository.findById(userDto.getSubDepartmentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Sub-department not found"));
-            Department dept = user.getDepartment();
-            if (dept == null) {
-                throw new IllegalArgumentException("Department is required when assigning a sub-department.");
+            if (userDto.getSubDepartmentId() != null) {
+                SubDepartment subDept = subDepartmentRepository.findById(userDto.getSubDepartmentId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Sub-department not found"));
+                if (!subDept.getDepartment().getId().equals(dept.getId())) {
+                    throw new IllegalArgumentException("Sub-department does not belong to the selected department");
+                }
+                user.setSubDepartment(subDept);
+            } else {
+                user.setSubDepartment(null);
             }
-            if (!subDept.getDepartment().getId().equals(dept.getId())) {
-                throw new IllegalArgumentException("Sub-department does not belong to the selected department");
-            }
-            user.setSubDepartment(subDept);
         } else {
+            user.setDepartment(null);
             user.setSubDepartment(null);
         }
 
-        // Update role if roleId is provided (replace existing roles)
-        if (userDto.getRoleId() != null) {
-            Role newRole = roleRepository.findById(userDto.getRoleId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        // Clear and add roles safely to avoid unique constraint violations
+        Set<Role> currentRoles = user.getRoles();
+        Set<Role> targetRoles = new HashSet<>();
 
-            // Clear existing roles
-            user.getUserRoles().clear();
+        if (userDto.getRoleIds() != null && !userDto.getRoleIds().isEmpty()) {
+            for (Long rId : userDto.getRoleIds()) {
+                Role role = roleRepository.findById(rId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + rId));
+                targetRoles.add(role);
+            }
+        } else if (userDto.getRoleId() != null) {
+            Role role = roleRepository.findById(userDto.getRoleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + userDto.getRoleId()));
+            targetRoles.add(role);
+        }
 
-            // Assign exactly one new role
-            UserRole userRole = UserRole.builder()
-                    .user(user)
-                    .role(newRole)
-                    .build();
-            user.getUserRoles().add(userRole);
+        // Perform safe update of the collection
+        currentRoles.removeIf(role -> !targetRoles.contains(role));
+        for (Role role : targetRoles) {
+            if (!currentRoles.contains(role)) {
+                currentRoles.add(role);
+            }
         }
 
         return mapToUserDto(userRepository.save(user));
@@ -267,7 +267,7 @@ public class AdminService {
     }
 
     public void deleteRole(Long id) {
-        if (userRoleRepository.existsByRoleId(id)) {
+        if (userRepository.existsByRolesId(id)) {
             throw new ResourceInUseException("Ce rôle est encore assigné à des utilisateurs. Veuillez d'abord révoquer ce rôle avant de le supprimer.");
         }
         roleRepository.deleteById(id);
@@ -281,15 +281,11 @@ public class AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         // Check if already assigned
-        boolean alreadyAssigned = user.getUserRoles().stream()
-                .anyMatch(ur -> ur.getRole().getId().equals(roleId));
+        boolean alreadyAssigned = user.getRoles().stream()
+                .anyMatch(r -> r.getId().equals(roleId));
 
         if (!alreadyAssigned) {
-            UserRole userRole = UserRole.builder()
-                    .user(user)
-                    .role(role)
-                    .build();
-            user.getUserRoles().add(userRole);
+            user.getRoles().add(role);
             userRepository.save(user);
         }
 
@@ -300,7 +296,7 @@ public class AdminService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        user.getUserRoles().removeIf(ur -> ur.getRole().getId().equals(roleId));
+        user.getRoles().removeIf(r -> r.getId().equals(roleId));
         userRepository.save(user);
 
         return mapToUserDto(user);
@@ -375,10 +371,19 @@ public class AdminService {
                 .status(user.getStatus())
                 .department(user.getDepartment() != null ? mapToDepartmentDto(user.getDepartment()) : null)
                 .subDepartmentId(user.getSubDepartment() != null ? user.getSubDepartment().getId() : null)
-                .roles(user.getUserRoles().stream()
-                        .map(UserRole::getRole)
+                .subDepartment(user.getSubDepartment() != null ? mapToSubDepartmentDto(user.getSubDepartment()) : null)
+                .roles(user.getRoles().stream()
                         .map(this::mapToRoleDto)
                         .collect(Collectors.toList()))
+                .build();
+    }
+
+    private SubDepartmentDto mapToSubDepartmentDto(SubDepartment subDept) {
+        return SubDepartmentDto.builder()
+                .id(subDept.getId())
+                .name(subDept.getName())
+                .departmentId(subDept.getDepartment() != null ? subDept.getDepartment().getId() : null)
+                .departmentName(subDept.getDepartment() != null ? subDept.getDepartment().getName() : null)
                 .build();
     }
 

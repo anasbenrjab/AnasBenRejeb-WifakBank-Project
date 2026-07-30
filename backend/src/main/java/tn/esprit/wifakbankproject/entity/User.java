@@ -39,7 +39,7 @@ public class User {
     @Column(nullable = false, length = 10)
     @Enumerated(EnumType.STRING)
     @Builder.Default
-    private Status status = Status.ACTIVE;
+    private UserStatus status = UserStatus.ACTIF;
 
     @Column(name = "CREATED_AT", updatable = false)
     private LocalDateTime createdAt;
@@ -55,9 +55,14 @@ public class User {
     @JoinColumn(name = "sub_department_id")
     private SubDepartment subDepartment;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "USER_ROLES",
+        joinColumns = @JoinColumn(name = "USER_ID"),
+        inverseJoinColumns = @JoinColumn(name = "ROLE_ID")
+    )
     @Builder.Default
-    private Set<UserRole> userRoles = new HashSet<>();
+    private Set<Role> roles = new HashSet<>();
 
     @PrePersist
     void prePersist() {
@@ -65,5 +70,4 @@ public class User {
     }
 
     public enum AuthType { AD, LOCAL }
-    public enum Status   { ACTIVE, INACTIVE }
 }

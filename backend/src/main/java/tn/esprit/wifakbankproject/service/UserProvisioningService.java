@@ -7,6 +7,7 @@ import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.wifakbankproject.entity.User;
+import tn.esprit.wifakbankproject.entity.UserStatus;
 import tn.esprit.wifakbankproject.repository.UserRepository;
 
 import java.time.LocalDateTime;
@@ -43,7 +44,7 @@ public class UserProvisioningService {
         User.UserBuilder builder = User.builder()
                 .login(login)
                 .authType(User.AuthType.AD)
-                .status(User.Status.ACTIVE)
+                .status(UserStatus.ACTIF)
                 .lastLogin(LocalDateTime.now());
 
         // Try to enrich from LDAP attributes when available

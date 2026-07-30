@@ -15,6 +15,7 @@ import tn.esprit.wifakbankproject.dto.VerifyOtpRequest;
 import tn.esprit.wifakbankproject.entity.AuditLog;
 import tn.esprit.wifakbankproject.entity.Otp;
 import tn.esprit.wifakbankproject.entity.User;
+import tn.esprit.wifakbankproject.entity.UserStatus;
 import tn.esprit.wifakbankproject.exception.AuthenticationException;
 import tn.esprit.wifakbankproject.repository.OtpRepository;
 import tn.esprit.wifakbankproject.repository.UserRepository;
@@ -63,7 +64,7 @@ public class AuthService {
             }
 
             // 3. Check local status (allows manual INACTIVE override)
-            if (user.getStatus() == User.Status.INACTIVE) {
+            if (user.getStatus() == UserStatus.INACTIF) {
                 auditLogService.log(login, user.getId(), AuditLog.Action.LOGIN_INACTIVE, clientIp);
                 throw new AuthenticationException("Compte désactivé. Contactez l'administrateur.");
             }
@@ -101,7 +102,7 @@ public class AuthService {
         User user = userRepository.findByLogin(login)
                 .orElseThrow(() -> new AuthenticationException("Utilisateur non trouvé."));
 
-        if (user.getStatus() == User.Status.INACTIVE) {
+        if (user.getStatus() == UserStatus.INACTIF) {
             auditLogService.log(login, user.getId(), AuditLog.Action.LOGIN_INACTIVE, clientIp);
             throw new AuthenticationException("Compte désactivé. Contactez l'administrateur.");
         }
@@ -154,7 +155,7 @@ public class AuthService {
         User user = userRepository.findByLogin(login)
                 .orElseThrow(() -> new AuthenticationException("Utilisateur non trouvé."));
 
-        if (user.getStatus() == User.Status.INACTIVE) {
+        if (user.getStatus() == UserStatus.INACTIF) {
             auditLogService.log(login, user.getId(), AuditLog.Action.LOGIN_INACTIVE, clientIp);
             throw new AuthenticationException("Compte désactivé. Contactez l'administrateur.");
         }

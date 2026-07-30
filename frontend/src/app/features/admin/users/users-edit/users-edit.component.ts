@@ -48,7 +48,7 @@ export class UsersEditComponent implements OnInit {
       } else {
         this.subDepartments.set([]);
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {
@@ -107,10 +107,10 @@ export class UsersEditComponent implements OnInit {
       prenom: formValue.prenom,
       nom: formValue.nom,
       email: formValue.email,
-      status: formValue.status,
+      status: formValue.status || 'ACTIF',
       department: formValue.departmentId
         ? this.departments().find(d => d.id === formValue.departmentId)
-        : undefined,
+        : null,
       subDepartmentId: formValue.subDepartmentId,
       roleId: formValue.roleId
     };

@@ -2,6 +2,7 @@ package tn.esprit.wifakbankproject.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.wifakbankproject.entity.*;
@@ -19,11 +20,13 @@ public class DataInitializer implements CommandLineRunner {
     private final ApplicationRepository applicationRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
-    private final UserRoleRepository userRoleRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional
     public void run(String... args) {
+        migrateUserStatusConstraint();
+        cleanUpDuplicateUserRoles();
         if (departmentRepository.count() == 0) {
             initDepartments();
         }
@@ -39,8 +42,46 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.count() == 0) {
             initUsers();
         }
-        if (userRoleRepository.count() == 0) {
+        boolean anyUserHasRoles = userRepository.findAll().stream().anyMatch(u -> !u.getRoles().isEmpty());
+        if (!anyUserHasRoles) {
             initUserRoles();
+        }
+    }
+
+    private void migrateUserStatusConstraint() {
+        try {
+            // Find check constraints on STATUS column of USERS table
+            String findConstraintsSql =
+                    "SELECT ucc.constraint_name " +
+                    "FROM user_cons_columns ucc " +
+                    "JOIN user_constraints uc ON ucc.constraint_name = uc.constraint_name " +
+                    "WHERE ucc.table_name = 'USERS' " +
+                    "  AND ucc.column_name = 'STATUS' " +
+                    "  AND uc.constraint_type = 'C'";
+
+            List<String> constraints = jdbcTemplate.queryForList(findConstraintsSql, String.class);
+            for (String constraintName : constraints) {
+                try {
+                    jdbcTemplate.execute("ALTER TABLE USERS DROP CONSTRAINT " + constraintName);
+                    System.out.println("Dropped check constraint: " + constraintName);
+                } catch (Exception e) {
+                    System.out.println("Could not drop constraint " + constraintName + ": " + e.getMessage());
+                }
+            }
+
+            // Run updates to migrate old status strings to new ones
+            jdbcTemplate.execute("UPDATE USERS SET STATUS = 'ACTIF' WHERE STATUS = 'ACTIVE'");
+            jdbcTemplate.execute("UPDATE USERS SET STATUS = 'INACTIF' WHERE STATUS = 'INACTIVE'");
+
+            // Re-add check constraint with correct values
+            try {
+                jdbcTemplate.execute("ALTER TABLE USERS ADD CONSTRAINT CHK_USER_STATUS CHECK (STATUS IN ('ACTIF', 'INACTIF'))");
+                System.out.println("Added check constraint CHK_USER_STATUS");
+            } catch (Exception e) {
+                System.out.println("Could not add CHK_USER_STATUS constraint: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to migrate user status constraints: " + e.getMessage());
         }
     }
 
@@ -94,30 +135,42 @@ public class DataInitializer implements CommandLineRunner {
         Department finance = departmentRepository.findByCode("FINANCE").orElseThrow();
         SubDepartment devops = subDepartmentRepository.findByDepartmentId(it.getId()).stream().findFirst().orElseThrow();
 
-        User admin = User.builder().login("admin").nom("Admin").prenom("Système").email("admin@wifakbank.tn").authType(User.AuthType.AD).status(User.Status.ACTIVE).createdAt(LocalDateTime.now()).department(it).subDepartment(devops).build();
-        User ahmed = User.builder().login("ahmed").nom("Ben Ali").prenom("Ahmed").email("ahmed@wifakbank.tn").authType(User.AuthType.AD).status(User.Status.ACTIVE).createdAt(LocalDateTime.now()).department(finance).build();
+        User admin = User.builder().login("admin").nom("Admin").prenom("Système").email("admin@wifakbank.tn").authType(User.AuthType.AD).status(UserStatus.ACTIF).createdAt(LocalDateTime.now()).department(it).subDepartment(devops).build();
+        User ahmed = User.builder().login("ahmed").nom("Ben Ali").prenom("Ahmed").email("ahmed@wifakbank.tn").authType(User.AuthType.AD).status(UserStatus.ACTIF).createdAt(LocalDateTime.now()).department(finance).build();
         userRepository.saveAll(List.of(admin, ahmed));
     }
 
     private void initUserRoles() {
         User admin = userRepository.findByLogin("admin").orElseThrow();
         User ahmed = userRepository.findByLogin("ahmed").orElseThrow();
-        Role adminDoi = roleRepository.findByNom("Administrateur DOI").orElseThrow();
+
+        Role validationCredit = roleRepository.findByNom("Validation CREDIT").orElseThrow();
+        Role consultationRh = roleRepository.findByNom("Consultation RH").orElseThrow();
         Role adminGed = roleRepository.findByNom("Administrateur GED").orElseThrow();
+        Role adminDoi = roleRepository.findByNom("Administrateur DOI").orElseThrow();
         Role adminCrm = roleRepository.findByNom("Administrateur CRM").orElseThrow();
         Role adminCredit = roleRepository.findByNom("Administrateur CREDIT").orElseThrow();
         Role responsableRh = roleRepository.findByNom("Responsable RH").orElseThrow();
-        Role validationCredit = roleRepository.findByNom("Validation CREDIT").orElseThrow();
-        Role consultationRh = roleRepository.findByNom("Consultation RH").orElseThrow();
 
-        UserRole ur1 = UserRole.builder().user(ahmed).role(validationCredit).build();
-        UserRole ur2 = UserRole.builder().user(ahmed).role(consultationRh).build();
-        UserRole ur3 = UserRole.builder().user(ahmed).role(adminGed).build();
-        UserRole ur4 = UserRole.builder().user(admin).role(adminDoi).build();
-        UserRole ur5 = UserRole.builder().user(admin).role(adminGed).build();
-        UserRole ur6 = UserRole.builder().user(admin).role(adminCrm).build();
-        UserRole ur7 = UserRole.builder().user(admin).role(adminCredit).build();
-        UserRole ur8 = UserRole.builder().user(admin).role(responsableRh).build();
-        userRoleRepository.saveAll(List.of(ur1, ur2, ur3, ur4, ur5, ur6, ur7, ur8));
+        ahmed.getRoles().addAll(List.of(validationCredit, consultationRh, adminGed));
+        admin.getRoles().addAll(List.of(adminDoi, adminGed, adminCrm, adminCredit, responsableRh));
+        userRepository.saveAll(List.of(admin, ahmed));
+    }
+
+    private void cleanUpDuplicateUserRoles() {
+        try {
+            // Clean up any duplicate role assignments in USER_ROLES table (keep one) using ROWID
+            jdbcTemplate.execute(
+                "DELETE FROM USER_ROLES " +
+                "WHERE ROWID NOT IN (" +
+                "    SELECT MIN(ROWID) " +
+                "    FROM USER_ROLES " +
+                "    GROUP BY USER_ID, ROLE_ID" +
+                ")"
+            );
+            System.out.println("Successfully cleaned up duplicate user role assignments.");
+        } catch (Exception e) {
+            System.out.println("No duplicates cleaned or error occurred: " + e.getMessage());
+        }
     }
 }

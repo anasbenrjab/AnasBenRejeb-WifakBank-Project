@@ -27,8 +27,8 @@
         (change)="statusFilter.set($any($event.target).value)"
       >
         <option value="all">Tous</option>
-        <option value="ACTIVE">Actif</option>
-        <option value="INACTIVE">Inactif</option>
+        <option value="ACTIF">Actif</option>
+        <option value="INACTIF">Inactif</option>
       </select>
     </div>
     <div class="filter-select">
@@ -122,7 +122,7 @@
               <td>{{ getRoleName(user.roles) }}</td>
               <td>{{ getDepartmentName(user.department) }}</td>
               <td>{{ getSubDepartmentName(user.subDepartment) }}</td>
-              <td><span [class]="getStatusBadgeClass(user.status)">{{ user.status === 'ACTIVE' ? 'Actif' : 'Inactif' }}</span></td>
+              <td><span [class]="getStatusBadgeClass(user.status)">{{ user.status === 'ACTIF' ? 'Actif' : 'Inactif' }}</span></td>
               <td>
                 <div class="actions-cell">
                   <button

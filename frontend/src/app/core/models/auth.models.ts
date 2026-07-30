@@ -68,8 +68,8 @@ export interface UserDto {
   email: string;
   authType: string;
   status: string;
-  department?: DepartmentDto;
-  subDepartment?: SubDepartmentDto;
+  department?: DepartmentDto | null;
+  subDepartment?: SubDepartmentDto | null;
   roles?: RoleDto[];
   roleId?: number | null;
   password?: string;

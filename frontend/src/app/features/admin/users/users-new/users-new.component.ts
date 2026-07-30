@@ -30,7 +30,7 @@ export class UsersNewComponent implements OnInit {
     nom: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
     authType: ['AD', [Validators.required]],
-    status: ['ACTIVE', [Validators.required]],
+    status: ['ACTIF', [Validators.required]],
     password: ['', []],
     departmentId: [null as number | null, []],
     subDepartmentId: [null as number | null, []],
@@ -49,7 +49,7 @@ export class UsersNewComponent implements OnInit {
       } else {
         this.subDepartments.set([]);
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {
@@ -84,10 +84,10 @@ export class UsersNewComponent implements OnInit {
       nom: formValue.nom,
       email: formValue.email,
       authType: formValue.authType,
-      status: formValue.status,
+      status: formValue.status || 'ACTIF',
       department: formValue.departmentId
         ? this.departments().find(d => d.id === formValue.departmentId)
-        : undefined,
+        : null,
       subDepartmentId: formValue.subDepartmentId,
       roleId: formValue.roleId,
       password: formValue.authType === 'LOCAL' ? formValue.password : undefined

@@ -99,11 +99,11 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  getDepartmentName(dept?: DepartmentDto): string {
+  getDepartmentName(dept?: DepartmentDto | null): string {
     return dept ? `${dept.code} - ${dept.name}` : 'Non assigné';
   }
 
-  getSubDepartmentName(subDept?: SubDepartmentDto): string {
+  getSubDepartmentName(subDept?: SubDepartmentDto | null): string {
     return subDept ? subDept.name : '';
   }
 
@@ -112,7 +112,7 @@ export class UsersComponent implements OnInit {
   }
 
   getStatusBadgeClass(status: string): string {
-    return status === 'ACTIVE' ? 'badge badge-active' : 'badge badge-inactive';
+    return status === 'ACTIF' ? 'badge badge-active' : 'badge badge-inactive';
   }
 
   parseNumber(value: string): number {
