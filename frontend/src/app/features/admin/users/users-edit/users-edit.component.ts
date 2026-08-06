@@ -1,9 +1,9 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AdminService } from '../../../../core/services/admin.service';
-import { UserDto, DepartmentDto, SubDepartmentDto, RoleDto } from '../../../../core/models/auth.models';
+import { UserDto, DepartmentDto, SubDepartmentDto, RoleDto, ApplicationDto, ApplicationRoleDto, UserApplicationRoleDto } from '../../../../core/models/auth.models';
 
 @Component({
   selector: 'app-users-edit',
@@ -22,9 +22,23 @@ export class UsersEditComponent implements OnInit {
   readonly errorMessage = signal<string | null>(null);
   readonly departments = signal<DepartmentDto[]>([]);
   readonly subDepartments = signal<SubDepartmentDto[]>([]);
+  readonly applications = signal<ApplicationDto[]>([]);
   readonly roles = signal<RoleDto[]>([]);
+  readonly applicationRoles = signal<ApplicationRoleDto[]>([]);
   readonly user = signal<UserDto | null>(null);
   readonly selectedDepartmentId = signal<number | null>(null);
+  readonly selectedApplicationId = signal<number | null>(null);
+
+  readonly filteredRoles = computed(() => {
+    const appId = this.selectedApplicationId();
+    const allRoles = this.roles();
+    const appRoles = this.applicationRoles();
+    if (!appId) return allRoles;
+    const allowedRoleIds = new Set(
+      appRoles.filter(ar => ar.applicationId === appId).map(ar => ar.roleId)
+    );
+    return allRoles.filter(r => allowedRoleIds.has(r.id));
+  });
 
   editForm = this.fb.nonNullable.group({
     prenom: ['', [Validators.required]],
@@ -33,11 +47,11 @@ export class UsersEditComponent implements OnInit {
     status: ['', [Validators.required]],
     departmentId: [null as number | null, []],
     subDepartmentId: [null as number | null, []],
+    applicationId: [null as number | null, [Validators.required]],
     roleId: [null as number | null, [Validators.required]]
   });
 
   constructor() {
-    // Load sub-departments when department changes
     effect(() => {
       const deptId = this.selectedDepartmentId();
       if (deptId) {
@@ -47,6 +61,17 @@ export class UsersEditComponent implements OnInit {
         });
       } else {
         this.subDepartments.set([]);
+      }
+    }, { allowSignalWrites: true });
+
+    effect(() => {
+      const appId = this.selectedApplicationId();
+      const currentRoleId = this.editForm.value.roleId;
+      if (appId && currentRoleId != null) {
+        const stillValid = this.filteredRoles().some(r => r.id === currentRoleId);
+        if (!stillValid) {
+          this.editForm.patchValue({ roleId: null });
+        }
       }
     }, { allowSignalWrites: true });
   }
@@ -59,14 +84,26 @@ export class UsersEditComponent implements OnInit {
       error: () => {}
     });
 
+    this.adminService.getApplications().subscribe({
+      next: apps => this.applications.set(apps),
+      error: () => {}
+    });
+
     this.adminService.getRoles().subscribe({
       next: roles => this.roles.set(roles),
+      error: () => {}
+    });
+
+    this.adminService.getApplicationRoles().subscribe({
+      next: ars => this.applicationRoles.set(ars),
       error: () => {}
     });
 
     this.adminService.getUser(id).subscribe({
       next: user => {
         this.user.set(user);
+        const existingAssignments: UserApplicationRoleDto[] = user.applicationRoles ?? [];
+        const primaryAssignment = existingAssignments[0] ?? null;
         this.editForm.patchValue({
           prenom: user.prenom,
           nom: user.nom,
@@ -74,10 +111,14 @@ export class UsersEditComponent implements OnInit {
           status: user.status,
           departmentId: user.department?.id ?? null,
           subDepartmentId: user.subDepartment?.id ?? null,
-          roleId: user.roles && user.roles.length > 0 ? user.roles[0].id : null
+          applicationId: primaryAssignment?.applicationId ?? null,
+          roleId: primaryAssignment?.roleId ?? null
         });
         if (user.department?.id) {
           this.selectedDepartmentId.set(user.department.id);
+        }
+        if (primaryAssignment?.applicationId) {
+          this.selectedApplicationId.set(primaryAssignment.applicationId);
         }
         this.loading.set(false);
       },
@@ -91,12 +132,28 @@ export class UsersEditComponent implements OnInit {
   onDepartmentChange() {
     const deptId = this.editForm.value.departmentId ?? null;
     this.selectedDepartmentId.set(deptId);
-    // Reset sub-department when department changes
     this.editForm.patchValue({ subDepartmentId: null });
   }
 
+  onApplicationChange() {
+    const appId = this.editForm.value.applicationId ?? null;
+    this.selectedApplicationId.set(appId);
+    this.editForm.patchValue({ roleId: null });
+  }
+
+  pickExistingAssignment(appRole: UserApplicationRoleDto) {
+    this.editForm.patchValue({
+      applicationId: appRole.applicationId,
+      roleId: appRole.roleId
+    });
+    this.selectedApplicationId.set(appRole.applicationId);
+  }
+
   saveUser() {
-    if (this.editForm.invalid) return;
+    if (this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
 
     const id = Number(this.route.snapshot.paramMap.get('id'));
     const formValue = this.editForm.getRawValue();
@@ -112,6 +169,7 @@ export class UsersEditComponent implements OnInit {
         ? this.departments().find(d => d.id === formValue.departmentId)
         : null,
       subDepartmentId: formValue.subDepartmentId,
+      applicationId: formValue.applicationId,
       roleId: formValue.roleId
     };
 
@@ -130,5 +188,11 @@ export class UsersEditComponent implements OnInit {
 
   getDepartmentName(dept?: DepartmentDto) {
     return dept ? `${dept.code} - ${dept.name}` : 'Non assigné';
+  }
+
+  getOtherAssignmentsCount(): number {
+    const u = this.user();
+    if (!u || !u.applicationRoles) return 0;
+    return Math.max(0, u.applicationRoles.length - 1);
   }
 }

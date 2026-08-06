@@ -1,0 +1,54 @@
+<div class="viewer-layout">
+
+  <!-- ── Viewer topbar ─────────────────────────────────────────────── -->
+  <header class="viewer-topbar">
+    <button class="btn-back" (click)="back()" aria-label="Retour au tableau de bord">
+      <span class="btn-back-arrow" aria-hidden="true">←</span>
+      Retour
+    </button>
+
+    <div class="viewer-app-info">
+      @if (app()) {
+        <span class="viewer-app-icon material-symbols-outlined" aria-hidden="true">
+          {{ app()!.icon || 'apps' }}
+        </span>
+        <span class="viewer-app-name">{{ app()!.nom }}</span>
+      }
+    </div>
+
+    <!-- Spacer to keep app name centred -->
+    <div class="viewer-topbar-spacer" aria-hidden="true"></div>
+  </header>
+
+  <!-- ── Content area ──────────────────────────────────────────────── -->
+  <div class="viewer-content">
+
+    @if (loading()) {
+      <div class="state-container" role="status" aria-live="polite">
+        <div class="spinner-large"></div>
+        <p class="state-text">Chargement de l'application…</p>
+      </div>
+    }
+
+    @if (!loading() && errorMessage()) {
+      <div class="state-container">
+        <span class="error-icon" aria-hidden="true">⚠</span>
+        <p class="state-text error-text">{{ errorMessage() }}</p>
+        <button class="btn-back-secondary" (click)="back()">
+          ← Retour au tableau de bord
+        </button>
+      </div>
+    }
+
+    @if (!loading() && !errorMessage() && safeUrl()) {
+      <iframe
+        class="app-iframe"
+        [src]="safeUrl()!"
+        [title]="app()?.nom || 'Application'"
+        allow="fullscreen"
+        referrerpolicy="no-referrer"
+      ></iframe>
+    }
+
+  </div>
+</div>

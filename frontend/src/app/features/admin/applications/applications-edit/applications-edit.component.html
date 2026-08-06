@@ -15,6 +15,13 @@
     {{ errorMessage() }}
   </div>
 } @else {
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
   <div class="card">
     <form [formGroup]="editForm" (ngSubmit)="save()" class="form-section">
       <div class="form-row">
@@ -45,12 +52,47 @@
         </div>
       </div>
       <div class="form-group">
+        <label>Département</label>
+        <select formControlName="departmentId" class="form-input">
+          <option [ngValue]="null">Non assigné</option>
+          @for (dept of departments(); track dept.id) {
+            <option [ngValue]="dept.id">{{ getDepartmentName(dept) }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Rôles disponibles pour cette application</label>
+        <div class="checkbox-grid">
+          @for (role of roles(); track role.id) {
+            <label class="checkbox-item" [class.checked]="isRoleSelected(role.id)">
+              <input
+                type="checkbox"
+                [checked]="isRoleSelected(role.id)"
+                (change)="toggleRole(role.id)"
+              />
+              <span class="checkbox-label-text">
+                <span class="checkbox-title">{{ role.nom }}</span>
+                @if (role.description) {
+                  <span class="checkbox-subtitle">{{ role.description }}</span>
+                }
+              </span>
+            </label>
+          }
+        </div>
+        <small class="form-hint">
+          ⚠ Si vous retirez un rôle déjà assigné à des utilisateurs dans cette application,
+          l'enregistrement sera bloqué avec la liste des utilisateurs concernés.
+        </small>
+      </div>
+      <div class="form-group">
         <label>Description</label>
         <textarea formControlName="description" class="form-input" rows="3"></textarea>
       </div>
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
-        <button type="submit" class="btn btn-primary" [disabled]="loading()">Enregistrer</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">
+          @if (loading()) { Chargement... } @else { Enregistrer }
+        </button>
       </div>
     </form>
   </div>

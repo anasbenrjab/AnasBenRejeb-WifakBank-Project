@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.wifakbankproject.dto.ApplicationDto;
+import tn.esprit.wifakbankproject.dto.ApplicationRoleDto;
 import tn.esprit.wifakbankproject.dto.DepartmentDto;
 import tn.esprit.wifakbankproject.dto.RoleDto;
 import tn.esprit.wifakbankproject.dto.UserDto;
@@ -45,14 +46,20 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/users/{userId}/roles/{roleId}")
-    public ResponseEntity<UserDto> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
-        return ResponseEntity.ok(adminService.assignRoleToUser(userId, roleId));
+    @PostMapping("/users/{userId}/applications/{applicationId}/roles/{roleId}")
+    public ResponseEntity<UserDto> assignRoleToUser(
+            @PathVariable Long userId,
+            @PathVariable Long applicationId,
+            @PathVariable Long roleId) {
+        return ResponseEntity.ok(adminService.assignRoleToUser(userId, applicationId, roleId));
     }
 
-    @DeleteMapping("/users/{userId}/roles/{roleId}")
-    public ResponseEntity<UserDto> revokeRoleFromUser(@PathVariable Long userId, @PathVariable Long roleId) {
-        return ResponseEntity.ok(adminService.revokeRoleFromUser(userId, roleId));
+    @DeleteMapping("/users/{userId}/applications/{applicationId}/roles/{roleId}")
+    public ResponseEntity<UserDto> revokeRoleFromUser(
+            @PathVariable Long userId,
+            @PathVariable Long applicationId,
+            @PathVariable Long roleId) {
+        return ResponseEntity.ok(adminService.revokeRoleFromUser(userId, applicationId, roleId));
     }
 
     // Departments endpoints
@@ -134,5 +141,11 @@ public class AdminController {
     public ResponseEntity<Void> deleteApplication(@PathVariable Long id) {
         adminService.deleteApplication(id);
         return ResponseEntity.ok().build();
+    }
+
+    // Application-Role whitelist endpoints
+    @GetMapping("/application-roles")
+    public ResponseEntity<List<ApplicationRoleDto>> getAllApplicationRoles() {
+        return ResponseEntity.ok(adminService.getAllApplicationRoles());
     }
 }

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AdminService } from '../../../../core/services/admin.service';
-import { ApplicationDto } from '../../../../core/models/auth.models';
+import { ApplicationDto, DepartmentDto, RoleDto } from '../../../../core/models/auth.models';
 
 @Component({
   selector: 'app-applications-edit',
@@ -21,6 +21,9 @@ export class ApplicationsEditComponent implements OnInit {
   readonly loading = signal(true);
   readonly errorMessage = signal<string | null>(null);
   readonly application = signal<ApplicationDto | null>(null);
+  readonly departments = signal<DepartmentDto[]>([]);
+  readonly roles = signal<RoleDto[]>([]);
+  readonly selectedRoleIds = signal<Set<number>>(new Set());
 
   editForm = this.fb.nonNullable.group({
     code: ['', [Validators.required]],
@@ -28,11 +31,21 @@ export class ApplicationsEditComponent implements OnInit {
     description: [''],
     url: [''],
     icon: [''],
-    status: ['ACTIVE', [Validators.required]]
+    status: ['ACTIVE', [Validators.required]],
+    departmentId: [null as number | null, []]
   });
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+
+    this.adminService.getDepartments().subscribe({
+      next: deps => this.departments.set(deps),
+      error: () => {}
+    });
+    this.adminService.getRoles().subscribe({
+      next: roles => this.roles.set(roles),
+      error: () => {}
+    });
 
     this.adminService.getApplication(id).subscribe({
       next: a => {
@@ -43,8 +56,14 @@ export class ApplicationsEditComponent implements OnInit {
           description: a.description,
           url: a.url,
           icon: a.icon,
-          status: a.status || 'ACTIVE'
+          status: a.status || 'ACTIVE',
+          departmentId: a.departmentId ?? null
         });
+        if (a.roleIds) {
+          this.selectedRoleIds.set(new Set(a.roleIds));
+        } else if (a.roles) {
+          this.selectedRoleIds.set(new Set(a.roles.map(r => r.id)));
+        }
         this.loading.set(false);
       },
       error: () => {
@@ -52,6 +71,24 @@ export class ApplicationsEditComponent implements OnInit {
         this.loading.set(false);
       }
     });
+  }
+
+  toggleRole(roleId: number): void {
+    const current = new Set(this.selectedRoleIds());
+    if (current.has(roleId)) {
+      current.delete(roleId);
+    } else {
+      current.add(roleId);
+    }
+    this.selectedRoleIds.set(current);
+  }
+
+  isRoleSelected(roleId: number): boolean {
+    return this.selectedRoleIds().has(roleId);
+  }
+
+  getDepartmentName(dept?: DepartmentDto): string {
+    return dept ? `${dept.code} - ${dept.name}` : 'Non assigné';
   }
 
   save(): void {
@@ -68,7 +105,9 @@ export class ApplicationsEditComponent implements OnInit {
       description: formValue.description,
       url: formValue.url,
       icon: formValue.icon,
-      status: formValue.status
+      status: formValue.status,
+      departmentId: formValue.departmentId,
+      roleIds: Array.from(this.selectedRoleIds())
     };
 
     this.adminService.updateApplication(id, updateData).subscribe({

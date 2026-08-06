@@ -1,0 +1,147 @@
+<div class="page-header">
+  <button class="btn btn-secondary" (click)="back()">← Retour</button>
+  <h1 class="page-title">Détails de l'utilisateur</h1>
+  <div>
+    @if (user()) {
+      <button
+        class="btn btn-primary"
+        [routerLink]="['/admin/users', user()!.id, 'edit']"
+      >
+        <i class="bi bi-pencil mr-2"></i>
+        Modifier
+      </button>
+    }
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="state-container">
+    <div class="spinner-large"></div>
+    <p class="state-text">Chargement...</p>
+  </div>
+} @else if (errorMessage()) {
+  <div class="alert alert-error">
+    <span class="alert-icon">⚠</span>
+    {{ errorMessage() }}
+  </div>
+} @else if (user()) {
+  <!-- User identity banner -->
+  <div class="card profile-card">
+    <div class="profile-head">
+      <span class="user-avatar-large">{{ (user()!.prenom || '?')[0].toUpperCase() }}{{ (user()!.nom || '')[0].toUpperCase() }}</span>
+      <div class="profile-head-info">
+        <h2 class="profile-fullname">{{ user()!.prenom }} {{ user()!.nom }}</h2>
+        <div class="profile-login-row">
+          <span class="profile-login-label">Login :</span>
+          <code class="profile-login-value">{{ user()!.login }}</code>
+        </div>
+        <div class="profile-tags">
+          <span [class]="getStatusBadgeClass(user()!.status)">{{ user()!.status }}</span>
+          <span class="tag tag-auth">{{ getAuthTypeLabel(user()!.authType) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info cards grid -->
+  <div class="detail-grid">
+    <div class="card detail-card">
+      <h3 class="detail-card-title">Informations générales</h3>
+      <div class="detail-field">
+        <span class="detail-label">Nom</span>
+        <span class="detail-value">{{ user()!.nom }}</span>
+      </div>
+      <div class="detail-field">
+        <span class="detail-label">Prénom</span>
+        <span class="detail-value">{{ user()!.prenom }}</span>
+      </div>
+      <div class="detail-field">
+        <span class="detail-label">Email</span>
+        <a class="detail-value link" [href]="'mailto:' + user()!.email">{{ user()!.email }}</a>
+      </div>
+      <div class="detail-field">
+        <span class="detail-label">Type d'authentification</span>
+        <span class="detail-value">{{ getAuthTypeLabel(user()!.authType) }} ({{ user()!.authType }})</span>
+      </div>
+      <div class="detail-field">
+        <span class="detail-label">Statut</span>
+        <span class="detail-value">
+          <span [class]="getStatusBadgeClass(user()!.status)">{{ user()!.status }}</span>
+        </span>
+      </div>
+      <div class="detail-field">
+        <span class="detail-label">Rôle</span>
+        <span class="detail-value">{{ getRoleName(user()!.roles) }}</span>
+      </div>
+    </div>
+
+    <div class="card detail-card">
+      <h3 class="detail-card-title">Organisation</h3>
+      <div class="detail-field">
+        <span class="detail-label">Département</span>
+        <span class="detail-value">{{ getDepartmentName(user()!.department) }}</span>
+      </div>
+      <div class="detail-field">
+        <span class="detail-label">Sous-département</span>
+        <span class="detail-value">{{ getSubDepartmentName(user()!.subDepartment) }}</span>
+      </div>
+    </div>
+
+    <div class="card detail-card">
+      <h3 class="detail-card-title">Historique du compte</h3>
+      <div class="detail-field">
+        <span class="detail-label">Créé le</span>
+        <span class="detail-value">{{ formatDateTime(user()!.createdAt) }}</span>
+      </div>
+      <div class="detail-field">
+        <span class="detail-label">Dernière connexion</span>
+        <span class="detail-value">{{ formatDateTime(user()!.lastLogin) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application-Roles assignments -->
+  <div class="card">
+    <div class="card-header-inline">
+      <h3 class="detail-card-title">Accès aux applications</h3>
+      @if (user()!.applicationRoles && user()!.applicationRoles!.length > 0) {
+        <span class="badge badge-count">{{ user()!.applicationRoles!.length }}</span>
+      }
+    </div>
+
+    @if (!user()!.applicationRoles || user()!.applicationRoles!.length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-key empty-icon"></i>
+        <p class="empty-text">Aucune application assignée</p>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Application</th>
+              <th>Code</th>
+              <th>Rôle</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ar of user()!.applicationRoles!; track ar.applicationId + '_' + ar.roleId) {
+              <tr>
+                <td>
+                  <div class="app-cell">
+                    <span class="app-code-dot">{{ ar.applicationCode ? ar.applicationCode.charAt(0).toUpperCase() : '' }}</span>
+                    <span class="app-name">{{ ar.applicationNom }}</span>
+                  </div>
+                </td>
+                <td><code class="badge-code">{{ ar.applicationCode }}</code></td>
+                <td><span class="badge badge-role">{{ ar.roleNom }}</span></td>
+                <td>{{ ar.roleDescription || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+}

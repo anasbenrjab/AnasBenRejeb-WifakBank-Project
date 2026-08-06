@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { UserDto, DepartmentDto, ApplicationDto, RoleDto, SubDepartmentDto } from '../models/auth.models';
+import { UserDto, DepartmentDto, ApplicationDto, RoleDto, SubDepartmentDto, ApplicationRoleDto } from '../models/auth.models';
 import { environment } from '../../../environments/environment';
 
 const API_URL = `${environment.apiUrl}/api/admin`;
@@ -31,12 +31,12 @@ export class AdminService {
     return this.http.delete<void>(`${API_URL}/users/${id}`);
   }
 
-  assignRoleToUser(userId: number, roleId: number): Observable<UserDto> {
-    return this.http.post<UserDto>(`${API_URL}/users/${userId}/roles/${roleId}`, {});
+  assignRoleToUser(userId: number, applicationId: number, roleId: number): Observable<UserDto> {
+    return this.http.post<UserDto>(`${API_URL}/users/${userId}/applications/${applicationId}/roles/${roleId}`, {});
   }
 
-  revokeRoleFromUser(userId: number, roleId: number): Observable<UserDto> {
-    return this.http.delete<UserDto>(`${API_URL}/users/${userId}/roles/${roleId}`);
+  revokeRoleFromUser(userId: number, applicationId: number, roleId: number): Observable<UserDto> {
+    return this.http.delete<UserDto>(`${API_URL}/users/${userId}/applications/${applicationId}/roles/${roleId}`);
   }
 
   // Departments
@@ -121,5 +121,10 @@ export class AdminService {
 
   deleteSubDepartment(id: number): Observable<void> {
     return this.http.delete<void>(`${API_URL}/subdepartments/${id}`);
+  }
+
+  // Application-Role whitelist
+  getApplicationRoles(): Observable<ApplicationRoleDto[]> {
+    return this.http.get<ApplicationRoleDto[]>(`${API_URL}/application-roles`);
   }
 }

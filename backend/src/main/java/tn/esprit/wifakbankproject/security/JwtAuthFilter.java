@@ -12,12 +12,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tn.esprit.wifakbankproject.repository.UserApplicationRoleRepository;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Reads the Bearer token from the Authorization header, validates it,
+ * loads the user's authorities from USER_APPLICATION_ROLES (role noms),
  * and sets the authentication in the SecurityContext.
  * All API calls after login are stateless – no AD lookup happens here.
  */
@@ -26,6 +29,7 @@ import java.util.List;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UserApplicationRoleRepository userApplicationRoleRepository;
 
     @Override
     protected void doFilterInternal(
@@ -43,12 +47,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 String login = jwtUtil.extractLogin(token);
 
-                List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
-                if ("admin".equals(login)) {
-                    authorities = List.of(
-                            new SimpleGrantedAuthority("ROLE_USER"),
-                            new SimpleGrantedAuthority("ROLE_ADMIN")
-                    );
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+                for (String roleName : userApplicationRoleRepository.findRoleNamesByLogin(login)) {
+                    authorities.add(new SimpleGrantedAuthority(roleName));
                 }
 
                 var auth = new UsernamePasswordAuthenticationToken(

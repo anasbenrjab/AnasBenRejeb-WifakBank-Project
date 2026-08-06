@@ -55,14 +55,9 @@ public class User {
     @JoinColumn(name = "sub_department_id")
     private SubDepartment subDepartment;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "USER_ROLES",
-        joinColumns = @JoinColumn(name = "USER_ID"),
-        inverseJoinColumns = @JoinColumn(name = "ROLE_ID")
-    )
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<Role> roles = new HashSet<>();
+    private Set<UserApplicationRole> userApplicationRoles = new HashSet<>();
 
     @PrePersist
     void prePersist() {

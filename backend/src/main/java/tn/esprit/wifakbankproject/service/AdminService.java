@@ -6,25 +6,34 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.wifakbankproject.dto.ApplicationDto;
+import tn.esprit.wifakbankproject.dto.ApplicationRoleDto;
 import tn.esprit.wifakbankproject.dto.DepartmentDto;
 import tn.esprit.wifakbankproject.dto.RoleDto;
+import tn.esprit.wifakbankproject.dto.UserApplicationRoleDto;
 import tn.esprit.wifakbankproject.dto.UserDto;
 import tn.esprit.wifakbankproject.dto.SubDepartmentDto;
 import tn.esprit.wifakbankproject.entity.Application;
+import tn.esprit.wifakbankproject.entity.ApplicationRole;
+import tn.esprit.wifakbankproject.entity.ApplicationRoleId;
 import tn.esprit.wifakbankproject.entity.Department;
 import tn.esprit.wifakbankproject.entity.Role;
 import tn.esprit.wifakbankproject.entity.User;
+import tn.esprit.wifakbankproject.entity.UserApplicationRole;
 import tn.esprit.wifakbankproject.entity.UserStatus;
 import tn.esprit.wifakbankproject.entity.SubDepartment;
 import tn.esprit.wifakbankproject.exception.DuplicateResourceException;
 import tn.esprit.wifakbankproject.exception.ResourceInUseException;
 import tn.esprit.wifakbankproject.exception.ResourceNotFoundException;
 import tn.esprit.wifakbankproject.repository.ApplicationRepository;
+import tn.esprit.wifakbankproject.repository.ApplicationRoleRepository;
+import tn.esprit.wifakbankproject.repository.AuditLogRepository;
 import tn.esprit.wifakbankproject.repository.DepartmentRepository;
 import tn.esprit.wifakbankproject.repository.RoleRepository;
+import tn.esprit.wifakbankproject.repository.UserApplicationRoleRepository;
 import tn.esprit.wifakbankproject.repository.UserRepository;
 import tn.esprit.wifakbankproject.repository.SubDepartmentRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
@@ -39,34 +48,31 @@ public class AdminService {
     private final DepartmentRepository departmentRepository;
     private final RoleRepository roleRepository;
     private final ApplicationRepository applicationRepository;
+    private final ApplicationRoleRepository applicationRoleRepository;
+    private final UserApplicationRoleRepository userApplicationRoleRepository;
+    private final AuditLogRepository auditLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final SubDepartmentRepository subDepartmentRepository;
 
     // Users
     public List<UserDto> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userRepository.findAllWithApplicationRoles().stream()
                 .map(this::mapToUserDto)
                 .collect(Collectors.toList());
     }
 
     public UserDto getUserById(Long id) {
-        return userRepository.findById(id)
+        return userRepository.findByIdWithApplicationRoles(id)
                 .map(this::mapToUserDto)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     public UserDto createUser(UserDto userDto) {
-        // Validate unique login
         if (userRepository.existsByLogin(userDto.getLogin())) {
             throw new DuplicateResourceException("Ce login existe déjà.");
         }
-        // Validate unique email
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new DuplicateResourceException("Cet email existe déjà.");
-        }
-        // Validate roleId is required for new users
-        if (userDto.getRoleId() == null) {
-            throw new IllegalArgumentException("Un rôle est requis pour créer un utilisateur.");
         }
 
         User.UserBuilder userBuilder = User.builder()
@@ -77,7 +83,6 @@ public class AdminService {
                 .authType(userDto.getAuthType())
                 .status(userDto.getStatus() != null ? userDto.getStatus() : UserStatus.ACTIF);
 
-        // Handle password for LOCAL auth type
         if (userDto.getAuthType() == User.AuthType.LOCAL) {
             if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
                 throw new IllegalArgumentException("Un mot de passe est requis pour les utilisateurs locaux.");
@@ -85,7 +90,6 @@ public class AdminService {
             userBuilder.password(passwordEncoder.encode(userDto.getPassword()));
         }
 
-        // Handle department if provided
         Department dept = null;
         if (userDto.getDepartment() != null && userDto.getDepartment().getId() != null) {
             dept = departmentRepository.findById(userDto.getDepartment().getId())
@@ -93,7 +97,6 @@ public class AdminService {
             userBuilder.department(dept);
         }
 
-        // Handle sub-department if provided
         if (userDto.getSubDepartmentId() != null) {
             SubDepartment subDept = subDepartmentRepository.findById(userDto.getSubDepartmentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Sub-department not found"));
@@ -106,24 +109,38 @@ public class AdminService {
             userBuilder.subDepartment(subDept);
         }
 
-        // Validate role exists
-        Role role = roleRepository.findById(userDto.getRoleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-
         User user = userBuilder.build();
-        user.getRoles().add(role);
         user = userRepository.save(user);
 
+        if (userDto.getApplicationId() != null && userDto.getRoleId() != null) {
+            assignRoleToUserInternal(user, userDto.getApplicationId(), userDto.getRoleId());
+        } else if (userDto.getApplicationRoleApplicationIds() != null
+                   && userDto.getApplicationRoleRoleIds() != null
+                   && userDto.getApplicationRoleApplicationIds().size() == userDto.getApplicationRoleRoleIds().size()) {
+            for (int i = 0; i < userDto.getApplicationRoleApplicationIds().size(); i++) {
+                assignRoleToUserInternal(user,
+                        userDto.getApplicationRoleApplicationIds().get(i),
+                        userDto.getApplicationRoleRoleIds().get(i));
+            }
+        }
+
+        user = userRepository.findByIdWithApplicationRoles(user.getId()).orElseThrow();
         return mapToUserDto(user);
     }
 
     public UserDto updateUser(Long id, UserDto userDto) {
-        User user = userRepository.findById(id)
+        // Load WITHOUT roles so cascade=MERGE on save() has nothing to traverse.
+        // Fetching roles here would populate the collection with managed entities;
+        // the subsequent JPQL deletes in the same transaction then leave Hibernate's
+        // first-level cache stale, causing NonUniqueObjectException on merge cascade.
+        User user = userRepository.findByIdForScalarUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         user.setNom(userDto.getNom());
         user.setPrenom(userDto.getPrenom());
         user.setEmail(userDto.getEmail());
         user.setStatus(userDto.getStatus());
+
         if (userDto.getDepartment() != null && userDto.getDepartment().getId() != null) {
             Department dept = departmentRepository.findById(userDto.getDepartment().getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
@@ -144,48 +161,100 @@ public class AdminService {
             user.setSubDepartment(null);
         }
 
-        // Clear and add roles safely to avoid unique constraint violations
-        Set<Role> currentRoles = user.getRoles();
-        Set<Role> targetRoles = new HashSet<>();
+        // Persist scalar changes before touching roles so the user row is
+        // stable when role insert FKs are resolved.
+        userRepository.save(user);
 
-        if (userDto.getRoleIds() != null && !userDto.getRoleIds().isEmpty()) {
-            for (Long rId : userDto.getRoleIds()) {
-                Role role = roleRepository.findById(rId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + rId));
-                targetRoles.add(role);
+        // ── Role assignment update ────────────────────────────────────────────
+        // All role work goes through the repository directly — never through
+        // user.getUserApplicationRoles() — to avoid cache/cascade conflicts.
+        //
+        //   • Full replacement (applicationRoleApplicationIds list provided):
+        //     delete all current assignments, insert the complete new set.
+        //   • Single-application update (applicationId + roleId provided):
+        //     delete only the row for that application, insert the new one.
+        //     All other applications' assignments are untouched.
+        //   • Neither provided: scalar-only update, roles unchanged.
+
+        if (userDto.getApplicationRoleApplicationIds() != null
+                && userDto.getApplicationRoleRoleIds() != null
+                && userDto.getApplicationRoleApplicationIds().size() == userDto.getApplicationRoleRoleIds().size()
+                && !userDto.getApplicationRoleApplicationIds().isEmpty()) {
+
+            List<Long> appIds  = userDto.getApplicationRoleApplicationIds();
+            List<Long> roleIds = userDto.getApplicationRoleRoleIds();
+
+            for (int i = 0; i < appIds.size(); i++) {
+                Long appId = appIds.get(i);
+                Long rId   = roleIds.get(i);
+                if (!applicationRoleRepository.existsByApplicationIdAndRoleId(appId, rId)) {
+                    Application app = applicationRepository.findById(appId).orElse(null);
+                    Role r          = roleRepository.findById(rId).orElse(null);
+                    throw new IllegalArgumentException(
+                        "La paire (application=" + (app != null ? app.getCode() : appId)
+                        + ", role=" + (r != null ? r.getNom() : rId) + ") n'existe pas dans APPLICATION_ROLES.");
+                }
             }
-        } else if (userDto.getRoleId() != null) {
-            Role role = roleRepository.findById(userDto.getRoleId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + userDto.getRoleId()));
-            targetRoles.add(role);
+
+            userApplicationRoleRepository.deleteAll(
+                userApplicationRoleRepository.findByUserId(id));
+
+            for (int i = 0; i < appIds.size(); i++) {
+                Application app = applicationRepository.findById(appIds.get(i))
+                        .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+                Role role = roleRepository.findById(roleIds.get(i))
+                        .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+                userApplicationRoleRepository.save(
+                    UserApplicationRole.builder().user(user).application(app).role(role).build());
+            }
+
+        } else if (userDto.getApplicationId() != null && userDto.getRoleId() != null) {
+
+            Long appId = userDto.getApplicationId();
+            Long rId   = userDto.getRoleId();
+
+            if (!applicationRoleRepository.existsByApplicationIdAndRoleId(appId, rId)) {
+                Application app = applicationRepository.findById(appId).orElse(null);
+                Role r          = roleRepository.findById(rId).orElse(null);
+                throw new IllegalArgumentException(
+                    "La paire (application=" + (app != null ? app.getCode() : appId)
+                    + ", role=" + (r != null ? r.getNom() : rId) + ") n'existe pas dans APPLICATION_ROLES.");
+            }
+
+            userApplicationRoleRepository.deleteByUserIdAndApplicationId(id, appId);
+
+            Application app = applicationRepository.findById(appId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Application not found: " + appId));
+            Role role = roleRepository.findById(rId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + rId));
+            userApplicationRoleRepository.save(
+                UserApplicationRole.builder().user(user).application(app).role(role).build());
         }
 
-        // Perform safe update of the collection
-        currentRoles.removeIf(role -> !targetRoles.contains(role));
-        for (Role role : targetRoles) {
-            if (!currentRoles.contains(role)) {
-                currentRoles.add(role);
-            }
-        }
-
-        return mapToUserDto(userRepository.save(user));
+        // Reload with roles joined to build the response DTO
+        return mapToUserDto(userRepository.findByIdWithApplicationRoles(id).orElseThrow());
     }
 
     public void deleteUser(Long id) {
-        // Check if user exists
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Get current authenticated user's login
         String currentLogin = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByLogin(currentLogin).orElse(null);
 
-        // Prevent deleting self
         if (currentUser != null && currentUser.getId().equals(id)) {
             throw new IllegalArgumentException("Vous ne pouvez pas supprimer votre propre compte.");
         }
 
-        // Delete user (userRoles will cascade because of CascadeType.ALL in User entity)
+        // AUDIT_LOG.USER_ID has a database-level FK to USERS(ID) with no ON DELETE
+        // CASCADE (it was created by Hibernate ddl-auto=update with an auto-generated
+        // constraint name). Audit history is intentionally kept — we just sever the
+        // user reference so the FK constraint doesn't block the delete.
+        auditLogRepository.detachUser(id);
+
+        // USER_APPLICATION_ROLES is covered by both JPA cascade=ALL on
+        // User.userApplicationRoles AND the database-level ON DELETE CASCADE on
+        // FK_UAR_USER (defined in V1 migration), so no manual cleanup needed there.
         userRepository.delete(user);
     }
 
@@ -267,42 +336,69 @@ public class AdminService {
     }
 
     public void deleteRole(Long id) {
-        if (userRepository.existsByRolesId(id)) {
-            throw new ResourceInUseException("Ce rôle est encore assigné à des utilisateurs. Veuillez d'abord révoquer ce rôle avant de le supprimer.");
+        if (userApplicationRoleRepository.existsByRoleId(id)
+                || applicationRoleRepository.findByRoleId(id).size() > 0) {
+            throw new ResourceInUseException("Ce rôle est encore assigné à des utilisateurs ou applications. Veuillez d'abord révoquer ce rôle avant de le supprimer.");
         }
         roleRepository.deleteById(id);
     }
 
-    // User Role Assignment
-    public UserDto assignRoleToUser(Long userId, Long roleId) {
-        User user = userRepository.findById(userId)
+    // User Application-Role Assignment
+    public UserDto assignRoleToUser(Long userId, Long applicationId, Long roleId) {
+        User user = userRepository.findByIdWithApplicationRoles(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        assignRoleToUserInternal(user, applicationId, roleId);
+        user = userRepository.findByIdWithApplicationRoles(userId).orElseThrow();
+        return mapToUserDto(user);
+    }
+
+    public UserDto revokeRoleFromUser(Long userId, Long applicationId, Long roleId) {
+        User user = userRepository.findByIdWithApplicationRoles(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.getUserApplicationRoles().removeIf(uar ->
+                uar.getApplication().getId().equals(applicationId)
+                && uar.getRole().getId().equals(roleId));
+        userRepository.save(user);
+
+        user = userRepository.findByIdWithApplicationRoles(userId).orElseThrow();
+        return mapToUserDto(user);
+    }
+
+    private void assignRoleToUserInternal(User user, Long applicationId, Long roleId) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        // Check if already assigned
-        boolean alreadyAssigned = user.getRoles().stream()
-                .anyMatch(r -> r.getId().equals(roleId));
-
-        if (!alreadyAssigned) {
-            user.getRoles().add(role);
-            userRepository.save(user);
+        if (!applicationRoleRepository.existsByApplicationIdAndRoleId(applicationId, roleId)) {
+            throw new IllegalArgumentException(
+                "Le rôle '" + role.getNom() + "' n'est pas autorisé pour l'application '" + application.getCode() + "'.");
         }
 
-        return mapToUserDto(user);
+        boolean alreadyAssigned = user.getUserApplicationRoles().stream()
+                .anyMatch(uar -> uar.getApplication().getId().equals(applicationId)
+                              && uar.getRole().getId().equals(roleId));
+
+        if (!alreadyAssigned) {
+            UserApplicationRole uar = UserApplicationRole.builder()
+                    .user(user)
+                    .application(application)
+                    .role(role)
+                    .build();
+            user.getUserApplicationRoles().add(uar);
+            userRepository.save(user);
+        }
     }
 
-    public UserDto revokeRoleFromUser(Long userId, Long roleId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        user.getRoles().removeIf(r -> r.getId().equals(roleId));
-        userRepository.save(user);
-
-        return mapToUserDto(user);
+    // Application-Role (valid pairings whitelist)
+    public List<ApplicationRoleDto> getAllApplicationRoles() {
+        return applicationRoleRepository.findAll().stream()
+                .map(this::mapToApplicationRoleDto)
+                .collect(Collectors.toList());
     }
 
-    // Applications (for dropdown in role form)
+    // Applications
     public List<ApplicationDto> getAllApplications() {
         return applicationRepository.findAll().stream()
                 .map(this::mapToApplicationDto)
@@ -320,18 +416,38 @@ public class AdminService {
             throw new DuplicateResourceException("Ce code d'application existe déjà");
         }
 
-        Application application = Application.builder()
+        Application.ApplicationBuilder builder = Application.builder()
                 .code(applicationDto.getCode())
                 .nom(applicationDto.getNom())
                 .description(applicationDto.getDescription())
                 .url(applicationDto.getUrl())
                 .icon(applicationDto.getIcon())
-                .status(applicationDto.getStatus() != null 
-                        ? Application.Status.valueOf(applicationDto.getStatus()) 
-                        : Application.Status.ACTIVE)
-                .build();
+                .status(applicationDto.getStatus() != null
+                        ? Application.Status.valueOf(applicationDto.getStatus())
+                        : Application.Status.ACTIVE);
 
+        if (applicationDto.getDepartmentId() != null) {
+            Department dept = departmentRepository.findById(applicationDto.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found: " + applicationDto.getDepartmentId()));
+            builder.department(dept);
+        }
+
+        Application application = builder.build();
         application = applicationRepository.save(application);
+
+        // Persist role whitelist (APPLICATION_ROLES)
+        if (applicationDto.getRoleIds() != null && !applicationDto.getRoleIds().isEmpty()) {
+            for (Long roleId : applicationDto.getRoleIds()) {
+                Role role = roleRepository.findById(roleId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleId));
+                ApplicationRole ar = ApplicationRole.builder()
+                        .application(application)
+                        .role(role)
+                        .build();
+                applicationRoleRepository.save(ar);
+            }
+        }
+
         return mapToApplicationDto(application);
     }
 
@@ -352,6 +468,66 @@ public class AdminService {
             application.setStatus(Application.Status.valueOf(applicationDto.getStatus()));
         }
 
+        if (applicationDto.getDepartmentId() != null) {
+            Department dept = departmentRepository.findById(applicationDto.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found: " + applicationDto.getDepartmentId()));
+            application.setDepartment(dept);
+        } else {
+            application.setDepartment(null);
+        }
+
+        // Sync role whitelist (APPLICATION_ROLES)
+        if (applicationDto.getRoleIds() != null) {
+            java.util.Set<Long> requestedRoleIds = new java.util.HashSet<>(applicationDto.getRoleIds());
+            List<ApplicationRole> current = applicationRoleRepository.findByApplicationId(id);
+            java.util.Set<Long> currentRoleIds = current.stream()
+                    .map(ar -> ar.getRole().getId())
+                    .collect(Collectors.toSet());
+
+            // Roles to remove
+            java.util.Set<Long> toRemove = new java.util.HashSet<>(currentRoleIds);
+            toRemove.removeAll(requestedRoleIds);
+
+            // SAFETY CHECK: Before removing any (app, role) pair, verify no users are assigned via USER_APPLICATION_ROLES
+            if (!toRemove.isEmpty()) {
+                List<String> blockingReasons = new java.util.ArrayList<>();
+                for (Long roleId : toRemove) {
+                    List<String> affectedUsers = userApplicationRoleRepository.findUserLoginsByApplicationIdAndRoleId(id, roleId);
+                    if (!affectedUsers.isEmpty()) {
+                        Role role = roleRepository.findById(roleId).orElse(null);
+                        String roleName = role != null ? role.getNom() : "id=" + roleId;
+                        blockingReasons.add(
+                            "Rôle '" + roleName + "' est encore assigné aux utilisateurs: " + String.join(", ", affectedUsers)
+                        );
+                    }
+                }
+                if (!blockingReasons.isEmpty()) {
+                    throw new ResourceInUseException(
+                        "Impossible de retirer des rôles de cette application car des utilisateurs y sont encore assignés. " +
+                        String.join(" | ", blockingReasons)
+                    );
+                }
+                // Safe to remove now
+                for (Long roleId : toRemove) {
+                    ApplicationRoleId arId = new ApplicationRoleId(id, roleId);
+                    applicationRoleRepository.deleteById(arId);
+                }
+            }
+
+            // Roles to add
+            java.util.Set<Long> toAdd = new java.util.HashSet<>(requestedRoleIds);
+            toAdd.removeAll(currentRoleIds);
+            for (Long roleId : toAdd) {
+                Role role = roleRepository.findById(roleId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleId));
+                ApplicationRole ar = ApplicationRole.builder()
+                        .application(application)
+                        .role(role)
+                        .build();
+                applicationRoleRepository.save(ar);
+            }
+        }
+
         return mapToApplicationDto(applicationRepository.save(application));
     }
 
@@ -361,6 +537,20 @@ public class AdminService {
 
     // Mappers
     private UserDto mapToUserDto(User user) {
+        List<UserApplicationRoleDto> applicationRoleDtos = new ArrayList<>();
+        if (user.getUserApplicationRoles() != null) {
+            applicationRoleDtos = user.getUserApplicationRoles().stream()
+                    .map(uar -> UserApplicationRoleDto.builder()
+                            .applicationId(uar.getApplication().getId())
+                            .applicationCode(uar.getApplication().getCode())
+                            .applicationNom(uar.getApplication().getNom())
+                            .roleId(uar.getRole().getId())
+                            .roleNom(uar.getRole().getNom())
+                            .roleDescription(uar.getRole().getDescription())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
         return UserDto.builder()
                 .id(user.getId())
                 .login(user.getLogin())
@@ -372,9 +562,9 @@ public class AdminService {
                 .department(user.getDepartment() != null ? mapToDepartmentDto(user.getDepartment()) : null)
                 .subDepartmentId(user.getSubDepartment() != null ? user.getSubDepartment().getId() : null)
                 .subDepartment(user.getSubDepartment() != null ? mapToSubDepartmentDto(user.getSubDepartment()) : null)
-                .roles(user.getRoles().stream()
-                        .map(this::mapToRoleDto)
-                        .collect(Collectors.toList()))
+                .applicationRoles(applicationRoleDtos)
+                .createdAt(user.getCreatedAt())
+                .lastLogin(user.getLastLogin())
                 .build();
     }
 
@@ -405,6 +595,14 @@ public class AdminService {
     }
 
     private ApplicationDto mapToApplicationDto(Application application) {
+        List<ApplicationRole> appRoles = applicationRoleRepository.findByApplicationId(application.getId());
+        List<RoleDto> roleDtos = appRoles.stream()
+                .map(ar -> mapToRoleDto(ar.getRole()))
+                .collect(Collectors.toList());
+        List<Long> roleIds = roleDtos.stream()
+                .map(RoleDto::getId)
+                .collect(Collectors.toList());
+
         return ApplicationDto.builder()
                 .id(application.getId())
                 .code(application.getCode())
@@ -413,6 +611,21 @@ public class AdminService {
                 .url(application.getUrl())
                 .icon(application.getIcon())
                 .status(application.getStatus().name())
+                .departmentId(application.getDepartment() != null ? application.getDepartment().getId() : null)
+                .departmentName(application.getDepartment() != null ? application.getDepartment().getName() : null)
+                .roleIds(roleIds)
+                .roles(roleDtos)
+                .build();
+    }
+
+    private ApplicationRoleDto mapToApplicationRoleDto(ApplicationRole ar) {
+        return ApplicationRoleDto.builder()
+                .applicationId(ar.getApplication().getId())
+                .applicationCode(ar.getApplication().getCode())
+                .applicationNom(ar.getApplication().getNom())
+                .roleId(ar.getRole().getId())
+                .roleNom(ar.getRole().getNom())
+                .roleDescription(ar.getRole().getDescription())
                 .build();
     }
 }

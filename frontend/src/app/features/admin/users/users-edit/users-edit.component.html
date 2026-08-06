@@ -9,12 +9,14 @@
     <div class="spinner-large"></div>
     <p class="state-text">Chargement...</p>
   </div>
-} @else if (errorMessage()) {
-  <div class="alert alert-error">
-    <span class="alert-icon">⚠</span>
-    {{ errorMessage() }}
-  </div>
 } @else {
+  @if (errorMessage()) {
+    <div class="alert alert-error" style="margin-bottom: 1.25rem;">
+      <span class="alert-icon">⚠</span>
+      {{ errorMessage() }}
+    </div>
+  }
+
   <div class="card">
     <form [formGroup]="editForm" (ngSubmit)="saveUser()" class="form-section">
       <div class="form-row">
@@ -42,14 +44,62 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Rôle *</label>
-        <select formControlName="roleId" class="form-input">
-          <option [ngValue]="null">-- Sélectionner un rôle --</option>
-          @for (role of roles(); track role.id) {
-            <option [ngValue]="role.id">{{ role.nom }}</option>
+      @if (user()?.applicationRoles && user()!.applicationRoles!.length > 1) {
+        <div class="info-banner">
+          <i class="bi bi-info-circle"></i>
+          <div>
+            <strong>{{ getOtherAssignmentsCount() + 1 }} affectations existent pour cet utilisateur.</strong>
+            <span class="subtle">La modification ci-dessous ne met à jour que l'affectation de l'application sélectionnée. Les {{ getOtherAssignmentsCount() }} autres affectations sont conservées intactes.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Charger une affectation existante dans le formulaire</label>
+          <div class="chips-row">
+            @for (ar of user()?.applicationRoles; track ar.applicationId + '-' + ar.roleId) {
+              <button
+                type="button"
+                class="chip"
+                [class.chip-active]="editForm.value.applicationId === ar.applicationId && editForm.value.roleId === ar.roleId"
+                (click)="pickExistingAssignment(ar)"
+              >
+                <span class="chip-app">{{ ar.applicationCode }}</span>
+                <span class="chip-sep">·</span>
+                <span class="chip-role">{{ ar.roleNom }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Application *</label>
+          <select formControlName="applicationId" class="form-input" (change)="onApplicationChange()">
+            <option [ngValue]="null">-- Sélectionner une application --</option>
+            @for (app of applications(); track app.id) {
+              <option [ngValue]="app.id">{{ app.code }} — {{ app.nom }}</option>
+            }
+          </select>
+          @if (editForm.get('applicationId')?.invalid && editForm.get('applicationId')?.touched) {
+            <div class="field-error">Veuillez sélectionner une application.</div>
           }
-        </select>
+        </div>
+        <div class="form-group">
+          <label>Rôle *</label>
+          <select formControlName="roleId" class="form-input">
+            <option [ngValue]="null">-- Sélectionner un rôle --</option>
+            @for (role of filteredRoles(); track role.id) {
+              <option [ngValue]="role.id">{{ role.nom }}</option>
+            }
+          </select>
+          @if (editForm.get('roleId')?.invalid && editForm.get('roleId')?.touched) {
+            <div class="field-error">Veuillez sélectionner un rôle.</div>
+          }
+          @if (selectedApplicationId() && filteredRoles().length === 0) {
+            <div class="field-hint">Aucun rôle n'est encore défini pour cette application dans APPLICATION_ROLES.</div>
+          }
+        </div>
       </div>
 
       <div class="form-group">

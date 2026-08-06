@@ -37,5 +37,9 @@ public class Application {
     @Builder.Default
     private Status status = Status.ACTIVE;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+
     public enum Status { ACTIVE, INACTIVE }
 }

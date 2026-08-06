@@ -108,7 +108,10 @@
         </thead>
         <tbody>
           @for (user of filteredUsers(); track user.id) {
-            <tr>
+            <tr
+              class="clickable-row"
+              [routerLink]="['/admin/users', user.id]"
+            >
               <td>
                 <div class="user-info-cell">
                   <span class="user-avatar-small">{{ (user.prenom || '?')[0].toUpperCase() }}{{ (user.nom || '')[0].toUpperCase() }}</span>
@@ -119,11 +122,11 @@
                 </div>
               </td>
               <td>{{ user.email }}</td>
-              <td>{{ getRoleName(user.roles) }}</td>
+              <td>{{ getRoleName(user.applicationRoles) }}</td>
               <td>{{ getDepartmentName(user.department) }}</td>
               <td>{{ getSubDepartmentName(user.subDepartment) }}</td>
               <td><span [class]="getStatusBadgeClass(user.status)">{{ user.status === 'ACTIF' ? 'Actif' : 'Inactif' }}</span></td>
-              <td>
+              <td (click)="$event.stopPropagation()">
                 <div class="actions-cell">
                   <button
                     class="btn-icon btn-secondary"

@@ -18,6 +18,7 @@ import tn.esprit.wifakbankproject.entity.User;
 import tn.esprit.wifakbankproject.entity.UserStatus;
 import tn.esprit.wifakbankproject.exception.AuthenticationException;
 import tn.esprit.wifakbankproject.repository.OtpRepository;
+import tn.esprit.wifakbankproject.repository.UserApplicationRoleRepository;
 import tn.esprit.wifakbankproject.repository.UserRepository;
 import tn.esprit.wifakbankproject.security.JwtUtil;
 
@@ -35,6 +36,7 @@ public class AuthService {
     private final OtpService                otpService;
     private final OtpRepository             otpRepository;
     private final UserRepository             userRepository;
+    private final UserApplicationRoleRepository userApplicationRoleRepository;
     private final PasswordEncoder            passwordEncoder;
 
     public LoginResponse login(LoginRequest request, String clientIp) {
@@ -146,7 +148,7 @@ public class AuthService {
                 .prenom(user.getPrenom())
                 .email(user.getEmail())
                 .otpRequired(false)
-                .admin("admin".equals(user.getLogin()))
+                .admin(userApplicationRoleRepository.isSystemAdminByLogin(user.getLogin()))
                 .build();
     }
 

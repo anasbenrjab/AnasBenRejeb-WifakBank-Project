@@ -1,0 +1,173 @@
+/* ── Full-viewport layout ─────────────────────────────────────────────── */
+.viewer-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--wifak-bg, #f8fafc);
+}
+
+/* ── Topbar ───────────────────────────────────────────────────────────── */
+.viewer-topbar {
+  height: 56px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-bottom: 3px solid var(--wifak-accent-red, #c0272d);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  gap: 1rem;
+  z-index: 10;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--wifak-bg, #f8fafc);
+  border: 1px solid var(--wifak-neutral-300, #d1d5db);
+  color: var(--wifak-neutral-700, #374151);
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-back:hover {
+  background: var(--wifak-accent-red, #c0272d);
+  border-color: var(--wifak-accent-red, #c0272d);
+  color: #fff;
+}
+
+.btn-back-arrow {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.viewer-app-info {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  /* centred between the two flex-shrink-0 sides */
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.viewer-app-icon {
+  font-size: 1.35rem;
+  color: var(--wifak-accent-red, #c0272d);
+  font-family: 'Material Symbols Outlined', monospace;
+  flex-shrink: 0;
+}
+
+.viewer-app-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--wifak-primary, #0a2342);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* mirrors .btn-back width so the app name stays visually centred */
+.viewer-topbar-spacer {
+  flex-shrink: 0;
+  width: 90px; /* approximate width of .btn-back */
+}
+
+/* ── Content + iframe ─────────────────────────────────────────────────── */
+.viewer-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-iframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #fff;
+}
+
+/* ── State screens ────────────────────────────────────────────────────── */
+.state-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.spinner-large {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--wifak-neutral-200, #e2e8f0);
+  border-top-color: var(--wifak-accent-red, #c0272d);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.state-text {
+  font-size: 1rem;
+  color: var(--wifak-neutral-700, #374151);
+  font-weight: 500;
+  margin: 0;
+}
+
+.error-icon {
+  font-size: 2.5rem;
+  color: var(--wifak-accent-red, #c0272d);
+}
+
+.error-text {
+  color: var(--wifak-accent-red-dark, #991b1b);
+}
+
+.btn-back-secondary {
+  margin-top: 0.5rem;
+  background: none;
+  border: 1px solid var(--wifak-neutral-300, #d1d5db);
+  color: var(--wifak-neutral-700, #374151);
+  padding: 0.5rem 1.1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.btn-back-secondary:hover {
+  background: var(--wifak-neutral-100, #f1f5f9);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .viewer-topbar {
+    padding: 0 0.9rem;
+  }
+
+  .viewer-app-name {
+    font-size: 0.875rem;
+  }
+
+  .viewer-topbar-spacer {
+    display: none;
+  }
+}

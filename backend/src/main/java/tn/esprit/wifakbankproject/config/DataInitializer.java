@@ -20,31 +20,30 @@ public class DataInitializer implements CommandLineRunner {
     private final ApplicationRepository applicationRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final ApplicationRoleRepository applicationRoleRepository;
+    private final UserApplicationRoleRepository userApplicationRoleRepository;
     private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional
     public void run(String... args) {
         migrateUserStatusConstraint();
-        cleanUpDuplicateUserRoles();
+        cleanUpDuplicateUserApplicationRoles();
         if (departmentRepository.count() == 0) {
             initDepartments();
         }
         if (subDepartmentRepository.count() == 0) {
             initSubDepartments();
         }
-        if (applicationRepository.count() == 0) {
-            initApplications();
+        initApplications();
+        initRoles();
+        initUsers();
+        if (applicationRoleRepository.count() == 0) {
+            initApplicationRoles();
         }
-        if (roleRepository.count() == 0) {
-            initRoles();
-        }
-        if (userRepository.count() == 0) {
-            initUsers();
-        }
-        boolean anyUserHasRoles = userRepository.findAll().stream().anyMatch(u -> !u.getRoles().isEmpty());
-        if (!anyUserHasRoles) {
-            initUserRoles();
+        boolean anyUserHasApplicationRoles = userApplicationRoleRepository.count() > 0;
+        if (!anyUserHasApplicationRoles) {
+            initUserApplicationRoles();
         }
     }
 
@@ -107,27 +106,53 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initApplications() {
-        Application doi = Application.builder().code("DOI").nom("Dématérialisation").description("Gestion documentaire dématérialisée").url("http://doi.wifakbank.tn").icon("description").authType("AD").status(Application.Status.ACTIVE).build();
-        Application ged = Application.builder().code("GED").nom("GED").description("Gestion électronique des documents").url("http://ged.wifakbank.tn").icon("folder").authType("AD").status(Application.Status.ACTIVE).build();
-        Application crm = Application.builder().code("CRM").nom("CRM").description("Gestion de la relation client").url("http://crm.wifakbank.tn").icon("people").authType("AD").status(Application.Status.ACTIVE).build();
-        Application credit = Application.builder().code("CREDIT").nom("Crédit").description("Gestion des dossiers de crédit").url("http://credit.wifakbank.tn").icon("account_balance").authType("AD").status(Application.Status.ACTIVE).build();
-        Application rhApp = Application.builder().code("RH").nom("Ressources Humaines").description("Gestion du personnel").url("http://rh.wifakbank.tn").icon("badge").authType("AD").status(Application.Status.ACTIVE).build();
-        applicationRepository.saveAll(List.of(doi, ged, crm, credit, rhApp));
+        Department it = departmentRepository.findByCode("IT").orElse(null);
+        Department rh = departmentRepository.findByCode("RH").orElse(null);
+        Department finance = departmentRepository.findByCode("FINANCE").orElse(null);
+        Department commercial = departmentRepository.findByCode("COMMERCIAL").orElse(null);
+
+        applicationRepository.findByCode("DOI").orElseGet(() ->
+            // TEMPORARY TEST URL — replace with http://doi.wifakbank.tn once the
+            // intranet server's X-Frame-Options / frame-ancestors CSP headers are
+            // confirmed to allow framing from this app's origin.
+            applicationRepository.save(Application.builder().code("DOI").nom("Dématérialisation").description("Gestion documentaire dématérialisée").url("https://en.wikipedia.org/wiki/Angular_(web_framework)").icon("description").authType("AD").status(Application.Status.ACTIVE).department(it).build()));
+        applicationRepository.findByCode("GED").orElseGet(() ->
+            applicationRepository.save(Application.builder().code("GED").nom("GED").description("Gestion électronique des documents").url("http://ged.wifakbank.tn").icon("folder").authType("AD").status(Application.Status.ACTIVE).department(it).build()));
+        applicationRepository.findByCode("CRM").orElseGet(() ->
+            applicationRepository.save(Application.builder().code("CRM").nom("CRM").description("Gestion de la relation client").url("http://crm.wifakbank.tn").icon("people").authType("AD").status(Application.Status.ACTIVE).department(commercial).build()));
+        applicationRepository.findByCode("CREDIT").orElseGet(() ->
+            applicationRepository.save(Application.builder().code("CREDIT").nom("Crédit").description("Gestion des dossiers de crédit").url("http://credit.wifakbank.tn").icon("account_balance").authType("AD").status(Application.Status.ACTIVE).department(finance).build()));
+        applicationRepository.findByCode("RH").orElseGet(() ->
+            applicationRepository.save(Application.builder().code("RH").nom("Ressources Humaines").description("Gestion du personnel").url("http://rh.wifakbank.tn").icon("badge").authType("AD").status(Application.Status.ACTIVE).department(rh).build()));
+        applicationRepository.findByCode("SYSTEM").orElseGet(() ->
+            applicationRepository.save(Application.builder().code("SYSTEM").nom("Admin Portal").description("Portail d'administration Wifak Bank").icon("shield-lock").authType("AD").status(Application.Status.ACTIVE).department(it).build()));
     }
 
     private void initRoles() {
-        Role adminDoi = Role.builder().nom("Administrateur DOI").description("Accès complet DOI").build();
-        Role consultationDoi = Role.builder().nom("Consultation DOI").description("Lecture seule DOI").build();
-        Role adminGed = Role.builder().nom("Administrateur GED").description("Accès complet GED").build();
-        Role consultationGed = Role.builder().nom("Consultation GED").description("Lecture seule GED").build();
-        Role adminCrm = Role.builder().nom("Administrateur CRM").description("Accès complet CRM").build();
-        Role consultationCrm = Role.builder().nom("Consultation CRM").description("Lecture seule CRM").build();
-        Role adminCredit = Role.builder().nom("Administrateur CREDIT").description("Accès complet Crédit").build();
-        Role validationCredit = Role.builder().nom("Validation CREDIT").description("Validation des dossiers Crédit").build();
-        Role consultationCredit = Role.builder().nom("Consultation CREDIT").description("Lecture seule Crédit").build();
-        Role responsableRh = Role.builder().nom("Responsable RH").description("Gestion complète RH").build();
-        Role consultationRh = Role.builder().nom("Consultation RH").description("Lecture seule RH").build();
-        roleRepository.saveAll(List.of(adminDoi, consultationDoi, adminGed, consultationGed, adminCrm, consultationCrm, adminCredit, validationCredit, consultationCredit, responsableRh, consultationRh));
+        roleRepository.findByNom("Administrateur DOI").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Administrateur DOI").description("Accès complet DOI").build()));
+        roleRepository.findByNom("Consultation DOI").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Consultation DOI").description("Lecture seule DOI").build()));
+        roleRepository.findByNom("Administrateur GED").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Administrateur GED").description("Accès complet GED").build()));
+        roleRepository.findByNom("Consultation GED").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Consultation GED").description("Lecture seule GED").build()));
+        roleRepository.findByNom("Administrateur CRM").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Administrateur CRM").description("Accès complet CRM").build()));
+        roleRepository.findByNom("Consultation CRM").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Consultation CRM").description("Lecture seule CRM").build()));
+        roleRepository.findByNom("Administrateur CREDIT").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Administrateur CREDIT").description("Accès complet Crédit").build()));
+        roleRepository.findByNom("Validation CREDIT").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Validation CREDIT").description("Validation des dossiers Crédit").build()));
+        roleRepository.findByNom("Consultation CREDIT").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Consultation CREDIT").description("Lecture seule Crédit").build()));
+        roleRepository.findByNom("Responsable RH").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Responsable RH").description("Gestion complète RH").build()));
+        roleRepository.findByNom("Consultation RH").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("Consultation RH").description("Lecture seule RH").build()));
+        roleRepository.findByNom("ROLE_ADMIN").orElseGet(() ->
+            roleRepository.save(Role.builder().nom("ROLE_ADMIN").description("Accès global au portail d'administration").build()));
     }
 
     private void initUsers() {
@@ -135,14 +160,22 @@ public class DataInitializer implements CommandLineRunner {
         Department finance = departmentRepository.findByCode("FINANCE").orElseThrow();
         SubDepartment devops = subDepartmentRepository.findByDepartmentId(it.getId()).stream().findFirst().orElseThrow();
 
-        User admin = User.builder().login("admin").nom("Admin").prenom("Système").email("admin@wifakbank.tn").authType(User.AuthType.AD).status(UserStatus.ACTIF).createdAt(LocalDateTime.now()).department(it).subDepartment(devops).build();
-        User ahmed = User.builder().login("ahmed").nom("Ben Ali").prenom("Ahmed").email("ahmed@wifakbank.tn").authType(User.AuthType.AD).status(UserStatus.ACTIF).createdAt(LocalDateTime.now()).department(finance).build();
-        userRepository.saveAll(List.of(admin, ahmed));
+        userRepository.findByLogin("admin").orElseGet(() ->
+            userRepository.save(User.builder().login("admin").nom("Admin").prenom("Système").email("admin@wifakbank.tn").authType(User.AuthType.AD).status(UserStatus.ACTIF).createdAt(LocalDateTime.now()).department(it).subDepartment(devops).build()));
+        userRepository.findByLogin("ahmed").orElseGet(() ->
+            userRepository.save(User.builder().login("ahmed").nom("Ben Ali").prenom("Ahmed").email("ahmed@wifakbank.tn").authType(User.AuthType.AD).status(UserStatus.ACTIF).createdAt(LocalDateTime.now()).department(finance).build()));
     }
 
-    private void initUserRoles() {
+    private void initUserApplicationRoles() {
         User admin = userRepository.findByLogin("admin").orElseThrow();
         User ahmed = userRepository.findByLogin("ahmed").orElseThrow();
+
+        Application doi = applicationRepository.findByCode("DOI").orElseThrow();
+        Application ged = applicationRepository.findByCode("GED").orElseThrow();
+        Application crm = applicationRepository.findByCode("CRM").orElseThrow();
+        Application credit = applicationRepository.findByCode("CREDIT").orElseThrow();
+        Application rhApp = applicationRepository.findByCode("RH").orElseThrow();
+        Application systemApp = applicationRepository.findByCode("SYSTEM").orElseThrow();
 
         Role validationCredit = roleRepository.findByNom("Validation CREDIT").orElseThrow();
         Role consultationRh = roleRepository.findByNom("Consultation RH").orElseThrow();
@@ -151,24 +184,75 @@ public class DataInitializer implements CommandLineRunner {
         Role adminCrm = roleRepository.findByNom("Administrateur CRM").orElseThrow();
         Role adminCredit = roleRepository.findByNom("Administrateur CREDIT").orElseThrow();
         Role responsableRh = roleRepository.findByNom("Responsable RH").orElseThrow();
+        Role systemAdminRole = roleRepository.findByNom("ROLE_ADMIN").orElseThrow();
 
-        ahmed.getRoles().addAll(List.of(validationCredit, consultationRh, adminGed));
-        admin.getRoles().addAll(List.of(adminDoi, adminGed, adminCrm, adminCredit, responsableRh));
-        userRepository.saveAll(List.of(admin, ahmed));
+        userApplicationRoleRepository.saveAll(List.of(
+                UserApplicationRole.builder().user(ahmed).application(credit).role(validationCredit).build(),
+                UserApplicationRole.builder().user(ahmed).application(rhApp).role(consultationRh).build(),
+                UserApplicationRole.builder().user(ahmed).application(ged).role(adminGed).build(),
+
+                UserApplicationRole.builder().user(admin).application(doi).role(adminDoi).build(),
+                UserApplicationRole.builder().user(admin).application(ged).role(adminGed).build(),
+                UserApplicationRole.builder().user(admin).application(crm).role(adminCrm).build(),
+                UserApplicationRole.builder().user(admin).application(credit).role(adminCredit).build(),
+                UserApplicationRole.builder().user(admin).application(rhApp).role(responsableRh).build(),
+                UserApplicationRole.builder().user(admin).application(systemApp).role(systemAdminRole).build()
+        ));
     }
 
-    private void cleanUpDuplicateUserRoles() {
+    private void initApplicationRoles() {
+        Application doi = applicationRepository.findByCode("DOI").orElseThrow();
+        Application ged = applicationRepository.findByCode("GED").orElseThrow();
+        Application crm = applicationRepository.findByCode("CRM").orElseThrow();
+        Application credit = applicationRepository.findByCode("CREDIT").orElseThrow();
+        Application rhApp = applicationRepository.findByCode("RH").orElseThrow();
+        Application systemApp = applicationRepository.findByCode("SYSTEM").orElseThrow();
+
+        Role adminDoi = roleRepository.findByNom("Administrateur DOI").orElseThrow();
+        Role consultationDoi = roleRepository.findByNom("Consultation DOI").orElseThrow();
+        Role adminGed = roleRepository.findByNom("Administrateur GED").orElseThrow();
+        Role consultationGed = roleRepository.findByNom("Consultation GED").orElseThrow();
+        Role adminCrm = roleRepository.findByNom("Administrateur CRM").orElseThrow();
+        Role consultationCrm = roleRepository.findByNom("Consultation CRM").orElseThrow();
+        Role adminCredit = roleRepository.findByNom("Administrateur CREDIT").orElseThrow();
+        Role validationCredit = roleRepository.findByNom("Validation CREDIT").orElseThrow();
+        Role consultationCredit = roleRepository.findByNom("Consultation CREDIT").orElseThrow();
+        Role responsableRh = roleRepository.findByNom("Responsable RH").orElseThrow();
+        Role consultationRh = roleRepository.findByNom("Consultation RH").orElseThrow();
+        Role systemAdminRole = roleRepository.findByNom("ROLE_ADMIN").orElseThrow();
+
+        applicationRoleRepository.saveAll(List.of(
+                ApplicationRole.builder().application(doi).role(adminDoi).build(),
+                ApplicationRole.builder().application(doi).role(consultationDoi).build(),
+
+                ApplicationRole.builder().application(ged).role(adminGed).build(),
+                ApplicationRole.builder().application(ged).role(consultationGed).build(),
+
+                ApplicationRole.builder().application(crm).role(adminCrm).build(),
+                ApplicationRole.builder().application(crm).role(consultationCrm).build(),
+
+                ApplicationRole.builder().application(credit).role(adminCredit).build(),
+                ApplicationRole.builder().application(credit).role(validationCredit).build(),
+                ApplicationRole.builder().application(credit).role(consultationCredit).build(),
+
+                ApplicationRole.builder().application(rhApp).role(responsableRh).build(),
+                ApplicationRole.builder().application(rhApp).role(consultationRh).build(),
+
+                ApplicationRole.builder().application(systemApp).role(systemAdminRole).build()
+        ));
+    }
+
+    private void cleanUpDuplicateUserApplicationRoles() {
         try {
-            // Clean up any duplicate role assignments in USER_ROLES table (keep one) using ROWID
             jdbcTemplate.execute(
-                "DELETE FROM USER_ROLES " +
+                "DELETE FROM USER_APPLICATION_ROLES " +
                 "WHERE ROWID NOT IN (" +
                 "    SELECT MIN(ROWID) " +
-                "    FROM USER_ROLES " +
-                "    GROUP BY USER_ID, ROLE_ID" +
+                "    FROM USER_APPLICATION_ROLES " +
+                "    GROUP BY USER_ID, APPLICATION_ID, ROLE_ID" +
                 ")"
             );
-            System.out.println("Successfully cleaned up duplicate user role assignments.");
+            System.out.println("Successfully cleaned up duplicate user-application-role assignments.");
         } catch (Exception e) {
             System.out.println("No duplicates cleaned or error occurred: " + e.getMessage());
         }

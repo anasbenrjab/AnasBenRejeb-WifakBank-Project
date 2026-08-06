@@ -133,3 +133,10 @@
   border: 1px solid #fecaca;
   color: #b91c1c;
 }
+
+.field-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+

@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,4 +19,8 @@ public class ApplicationDto {
     private String url;
     private String icon;
     private String status;
+    private Long departmentId;
+    private String departmentName;
+    private List<Long> roleIds;
+    private List<RoleDto> roles;
 }

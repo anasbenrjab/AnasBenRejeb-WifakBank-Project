@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { AppEntry } from '../../core/models/dashboard.models';
@@ -8,7 +8,7 @@ import { AppEntry } from '../../core/models/dashboard.models';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
@@ -42,10 +42,8 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  openApp(url: string | undefined): void {
-    if (url) {
-      window.open(url, '_blank', 'noopener noreferrer');
-    }
+  openApp(id: number): void {
+    this.router.navigate(['/dashboard/app', id]);
   }
 
   logout(): void {

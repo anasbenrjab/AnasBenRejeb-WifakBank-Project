@@ -52,12 +52,34 @@ export interface ApplicationDto {
   url?: string;
   icon?: string;
   status?: string;
+  departmentId?: number | null;
+  departmentName?: string | null;
+  roleIds?: number[] | null;
+  roles?: RoleDto[] | null;
 }
 
 export interface RoleDto {
   id: number;
   nom: string;
   description?: string;
+}
+
+export interface UserApplicationRoleDto {
+  applicationId: number;
+  applicationCode: string;
+  applicationNom: string;
+  roleId: number;
+  roleNom: string;
+  roleDescription?: string;
+}
+
+export interface ApplicationRoleDto {
+  applicationId: number;
+  applicationCode: string;
+  applicationNom: string;
+  roleId: number;
+  roleNom: string;
+  roleDescription?: string;
 }
 
 export interface UserDto {
@@ -70,8 +92,15 @@ export interface UserDto {
   status: string;
   department?: DepartmentDto | null;
   subDepartment?: SubDepartmentDto | null;
-  roles?: RoleDto[];
+  applicationRoles?: UserApplicationRoleDto[];
+  applicationId?: number | null;
   roleId?: number | null;
+  roles?: RoleDto[];
+  applicationRoleApplicationIds?: number[];
+  applicationRoleRoleIds?: number[];
+  subDepartmentId?: number | null;
+  createdAt?: string | null;
+  lastLogin?: string | null;
   password?: string;
 }
 

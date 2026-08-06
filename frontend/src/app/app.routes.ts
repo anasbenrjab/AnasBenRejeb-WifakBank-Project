@@ -16,9 +16,19 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    loadComponent: () =>
-      import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
+      {
+        path: 'app/:id',
+        loadComponent: () =>
+          import('./features/dashboard/app-viewer/app-viewer.component').then(m => m.AppViewerComponent)
+      }
+    ]
   },
   {
     path: 'admin',
@@ -49,6 +59,11 @@ export const routes: Routes = [
         path: 'users/:id/edit',
         loadComponent: () =>
           import('./features/admin/users/users-edit/users-edit.component').then(m => m.UsersEditComponent)
+      },
+      {
+        path: 'users/:id',
+        loadComponent: () =>
+          import('./features/admin/users/users-detail/users-detail.component').then(m => m.UsersDetailComponent)
       },
       {
         path: 'roles',

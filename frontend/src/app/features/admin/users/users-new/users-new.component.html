@@ -65,14 +65,28 @@
         </div>
       }
 
-      <div class="form-group">
-        <label>Rôle *</label>
-        <select formControlName="roleId" class="form-input">
-          <option [ngValue]="null">-- Sélectionner un rôle --</option>
-          @for (role of roles(); track role.id) {
-            <option [ngValue]="role.id">{{ role.nom }}</option>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Application *</label>
+          <select formControlName="applicationId" class="form-input" (change)="onApplicationChange()">
+            <option [ngValue]="null">-- Sélectionner une application --</option>
+            @for (app of applications(); track app.id) {
+              <option [ngValue]="app.id">{{ app.code }} — {{ app.nom }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Rôle *</label>
+          <select formControlName="roleId" class="form-input">
+            <option [ngValue]="null">-- Sélectionner un rôle --</option>
+            @for (role of filteredRoles(); track role.id) {
+              <option [ngValue]="role.id">{{ role.nom }}</option>
+            }
+          </select>
+          @if (selectedApplicationId() && filteredRoles().length === 0) {
+            <div class="field-hint">Aucun rôle n'est encore défini pour cette application dans APPLICATION_ROLES.</div>
           }
-        </select>
+        </div>
       </div>
 
       <div class="form-group">

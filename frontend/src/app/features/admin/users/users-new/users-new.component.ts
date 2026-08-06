@@ -1,9 +1,9 @@
-import { Component, inject, signal, effect, OnInit } from '@angular/core';
+import { Component, inject, signal, effect, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminService } from '../../../../core/services/admin.service';
-import { UserDto, DepartmentDto, SubDepartmentDto, RoleDto } from '../../../../core/models/auth.models';
+import { UserDto, DepartmentDto, SubDepartmentDto, RoleDto, ApplicationDto, ApplicationRoleDto } from '../../../../core/models/auth.models';
 
 @Component({
   selector: 'app-users-new',
@@ -21,8 +21,22 @@ export class UsersNewComponent implements OnInit {
   readonly errorMessage = signal<string | null>(null);
   readonly departments = signal<DepartmentDto[]>([]);
   readonly subDepartments = signal<SubDepartmentDto[]>([]);
+  readonly applications = signal<ApplicationDto[]>([]);
   readonly roles = signal<RoleDto[]>([]);
+  readonly applicationRoles = signal<ApplicationRoleDto[]>([]);
   readonly selectedDepartmentId = signal<number | null>(null);
+  readonly selectedApplicationId = signal<number | null>(null);
+
+  readonly filteredRoles = computed(() => {
+    const appId = this.selectedApplicationId();
+    const allRoles = this.roles();
+    const appRoles = this.applicationRoles();
+    if (!appId) return allRoles;
+    const allowedRoleIds = new Set(
+      appRoles.filter(ar => ar.applicationId === appId).map(ar => ar.roleId)
+    );
+    return allRoles.filter(r => allowedRoleIds.has(r.id));
+  });
 
   createForm = this.fb.nonNullable.group({
     login: ['', [Validators.required]],
@@ -32,13 +46,13 @@ export class UsersNewComponent implements OnInit {
     authType: ['AD', [Validators.required]],
     status: ['ACTIF', [Validators.required]],
     password: ['', []],
+    applicationId: [null as number | null, [Validators.required]],
+    roleId: [null as number | null, [Validators.required]],
     departmentId: [null as number | null, []],
-    subDepartmentId: [null as number | null, []],
-    roleId: [null as number | null, [Validators.required]]
+    subDepartmentId: [null as number | null, []]
   });
 
   constructor() {
-    // Load sub-departments when department changes
     effect(() => {
       const deptId = this.selectedDepartmentId();
       if (deptId) {
@@ -50,6 +64,17 @@ export class UsersNewComponent implements OnInit {
         this.subDepartments.set([]);
       }
     }, { allowSignalWrites: true });
+
+    effect(() => {
+      const appId = this.selectedApplicationId();
+      const currentRoleId = this.createForm.value.roleId;
+      if (appId && currentRoleId != null) {
+        const stillValid = this.filteredRoles().some(r => r.id === currentRoleId);
+        if (!stillValid) {
+          this.createForm.patchValue({ roleId: null });
+        }
+      }
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {
@@ -58,8 +83,18 @@ export class UsersNewComponent implements OnInit {
       error: () => {}
     });
 
+    this.adminService.getApplications().subscribe({
+      next: apps => this.applications.set(apps),
+      error: () => {}
+    });
+
     this.adminService.getRoles().subscribe({
       next: roles => this.roles.set(roles),
+      error: () => {}
+    });
+
+    this.adminService.getApplicationRoles().subscribe({
+      next: ars => this.applicationRoles.set(ars),
       error: () => {}
     });
   }
@@ -67,8 +102,13 @@ export class UsersNewComponent implements OnInit {
   onDepartmentChange() {
     const deptId = this.createForm.value.departmentId ?? null;
     this.selectedDepartmentId.set(deptId);
-    // Reset sub-department when department changes
     this.createForm.patchValue({ subDepartmentId: null });
+  }
+
+  onApplicationChange() {
+    const appId = this.createForm.value.applicationId ?? null;
+    this.selectedApplicationId.set(appId);
+    this.createForm.patchValue({ roleId: null });
   }
 
   saveCreate() {
@@ -85,11 +125,12 @@ export class UsersNewComponent implements OnInit {
       email: formValue.email,
       authType: formValue.authType,
       status: formValue.status || 'ACTIF',
+      applicationId: formValue.applicationId,
+      roleId: formValue.roleId,
       department: formValue.departmentId
         ? this.departments().find(d => d.id === formValue.departmentId)
         : null,
       subDepartmentId: formValue.subDepartmentId,
-      roleId: formValue.roleId,
       password: formValue.authType === 'LOCAL' ? formValue.password : undefined
     };
 

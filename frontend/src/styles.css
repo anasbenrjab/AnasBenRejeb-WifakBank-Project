@@ -181,3 +181,76 @@ a {
 .skeleton-circle {
   border-radius: 50%;
 }
+
+/* ── Checkbox grid (for multi-select roles in forms) ──────────────────── */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--wifak-neutral-50);
+  border: 1px solid var(--wifak-neutral-200);
+  border-radius: var(--wifak-radius-md);
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid var(--wifak-neutral-200);
+  border-radius: var(--wifak-radius-md);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.checkbox-item:hover {
+  border-color: var(--wifak-primary-light);
+  box-shadow: var(--wifak-shadow-sm);
+}
+
+.checkbox-item.checked {
+  border-color: var(--wifak-primary);
+  background: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(0, 85, 153, 0.1);
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--wifak-primary);
+  cursor: pointer;
+}
+
+.checkbox-label-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.checkbox-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--wifak-neutral-900);
+}
+
+.checkbox-subtitle {
+  font-size: 0.8rem;
+  color: var(--wifak-neutral-500);
+  line-height: 1.3;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--wifak-neutral-500);
+  font-style: italic;
+}
