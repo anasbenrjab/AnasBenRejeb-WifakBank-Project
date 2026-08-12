@@ -87,6 +87,14 @@ export class ApplicationsEditComponent implements OnInit {
     return this.selectedRoleIds().has(roleId);
   }
 
+  get noRoleChecked(): boolean {
+    return this.selectedRoleIds().size === 0;
+  }
+
+  selectNoRole(): void {
+    this.selectedRoleIds.set(new Set());
+  }
+
   getDepartmentName(dept?: DepartmentDto): string {
     return dept ? `${dept.code} - ${dept.name}` : 'Non assigné';
   }

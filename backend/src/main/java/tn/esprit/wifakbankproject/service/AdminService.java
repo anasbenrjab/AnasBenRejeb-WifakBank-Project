@@ -532,6 +532,30 @@ public class AdminService {
     }
 
     public void deleteApplication(Long id) {
+        int roleDefinitions = applicationRoleRepository.findByApplicationId(id).size();
+        int userAssignments = userApplicationRoleRepository.findByApplicationId(id).size();
+
+        if (roleDefinitions > 0 || userAssignments > 0) {
+            StringBuilder msg = new StringBuilder(
+                "Impossible de supprimer cette application : ");
+            if (roleDefinitions > 0 && userAssignments > 0) {
+                msg.append(roleDefinitions)
+                   .append(" rôle(s) défini(s) et ")
+                   .append(userAssignments)
+                   .append(" utilisateur(s) assigné(s) sont encore liés. ")
+                   .append("Supprimez d'abord les affectations et définitions de rôles.");
+            } else if (roleDefinitions > 0) {
+                msg.append(roleDefinitions)
+                   .append(" rôle(s) sont encore définis pour cette application. ")
+                   .append("Supprimez d'abord les définitions de rôles.");
+            } else {
+                msg.append(userAssignments)
+                   .append(" utilisateur(s) ont encore accès à cette application. ")
+                   .append("Révoquez d'abord ces accès.");
+            }
+            throw new ResourceInUseException(msg.toString());
+        }
+
         applicationRepository.deleteById(id);
     }
 

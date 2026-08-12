@@ -58,6 +58,19 @@
       <div class="form-group">
         <label>Rôles disponibles pour cette application</label>
         <div class="checkbox-grid">
+          <!-- "Aucun rôle" shortcut — pure UI, sends empty roleIds to backend -->
+          <label class="checkbox-item checkbox-item-none" [class.checked]="noRoleChecked">
+            <input
+              type="checkbox"
+              [checked]="noRoleChecked"
+              (change)="selectNoRole()"
+            />
+            <span class="checkbox-label-text">
+              <span class="checkbox-title">Aucun rôle</span>
+              <span class="checkbox-subtitle">Aucun accès spécifique requis</span>
+            </span>
+          </label>
+          <div class="checkbox-divider"></div>
           @for (role of roles(); track role.id) {
             <label class="checkbox-item" [class.checked]="isRoleSelected(role.id)">
               <input

@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AdminService } from '../../../core/services/admin.service';
-import { ApplicationDto } from '../../../core/models/auth.models';
+import { ApplicationDto, RoleDto } from '../../../core/models/auth.models';
 
 @Component({
   selector: 'app-applications',
@@ -73,5 +73,11 @@ export class ApplicationsComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     return status === 'ACTIVE' ? 'badge badge-active' : 'badge badge-inactive';
+  }
+
+  getRolesSummary(roles?: RoleDto[] | null): string {
+    if (!roles || roles.length === 0) return 'Aucun rôle';
+    if (roles.length === 1) return roles[0].nom;
+    return `${roles.length} rôles (${roles.map(r => r.nom).join(', ')})`;
   }
 }
