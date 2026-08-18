@@ -1,9 +1,18 @@
-import { Component, inject, signal, effect, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AdminService } from '../../../../core/services/admin.service';
-import { UserDto, DepartmentDto, SubDepartmentDto, RoleDto, ApplicationDto, ApplicationRoleDto } from '../../../../core/models/auth.models';
+import {
+  UserDto, DepartmentDto, SubDepartmentDto,
+  RoleDto, ApplicationDto, ApplicationRoleDto
+} from '../../../../core/models/auth.models';
+
+/** One application+role picker row in the assignment list. */
+interface AssignmentRow {
+  appId: number | null;
+  roleId: number | null;
+}
 
 @Component({
   selector: 'app-users-new',
@@ -25,119 +34,140 @@ export class UsersNewComponent implements OnInit {
   readonly roles = signal<RoleDto[]>([]);
   readonly applicationRoles = signal<ApplicationRoleDto[]>([]);
   readonly selectedDepartmentId = signal<number | null>(null);
-  readonly selectedApplicationId = signal<number | null>(null);
 
-  readonly filteredRoles = computed(() => {
-    const appId = this.selectedApplicationId();
+  // Dynamic assignment rows — start with one empty row
+  readonly assignmentRows = signal<AssignmentRow[]>([{ appId: null, roleId: null }]);
+
+  /** Filtered roles per row, keyed by row index. */
+  readonly filteredRolesPerRow = computed(() => {
     const allRoles = this.roles();
     const appRoles = this.applicationRoles();
-    if (!appId) return allRoles;
-    const allowedRoleIds = new Set(
-      appRoles.filter(ar => ar.applicationId === appId).map(ar => ar.roleId)
-    );
-    return allRoles.filter(r => allowedRoleIds.has(r.id));
+    return this.assignmentRows().map(row => {
+      if (!row.appId) return allRoles;
+      const allowed = new Set(
+        appRoles.filter(ar => ar.applicationId === row.appId).map(ar => ar.roleId)
+      );
+      return allRoles.filter(r => allowed.has(r.id));
+    });
   });
 
   createForm = this.fb.nonNullable.group({
-    login: ['', [Validators.required]],
-    prenom: ['', [Validators.required]],
-    nom: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
-    authType: ['AD', [Validators.required]],
-    status: ['ACTIF', [Validators.required]],
-    password: ['', []],
-    applicationId: [null as number | null, [Validators.required]],
-    roleId: [null as number | null, [Validators.required]],
+    login:        ['', [Validators.required]],
+    prenom:       ['', [Validators.required]],
+    nom:          ['', [Validators.required]],
+    email:        ['', [Validators.required, Validators.email]],
+    authType:     ['AD', [Validators.required]],
+    status:       ['ACTIF', [Validators.required]],
+    password:     ['', []],
     departmentId: [null as number | null, []],
     subDepartmentId: [null as number | null, []]
   });
-
-  constructor() {
-    effect(() => {
-      const deptId = this.selectedDepartmentId();
-      if (deptId) {
-        this.adminService.getSubDepartmentsByDepartment(deptId).subscribe({
-          next: subDepts => this.subDepartments.set(subDepts),
-          error: () => this.subDepartments.set([])
-        });
-      } else {
-        this.subDepartments.set([]);
-      }
-    }, { allowSignalWrites: true });
-
-    effect(() => {
-      const appId = this.selectedApplicationId();
-      const currentRoleId = this.createForm.value.roleId;
-      if (appId && currentRoleId != null) {
-        const stillValid = this.filteredRoles().some(r => r.id === currentRoleId);
-        if (!stillValid) {
-          this.createForm.patchValue({ roleId: null });
-        }
-      }
-    }, { allowSignalWrites: true });
-  }
 
   ngOnInit() {
     this.adminService.getDepartments().subscribe({
       next: deps => this.departments.set(deps),
       error: () => {}
     });
-
     this.adminService.getApplications().subscribe({
       next: apps => this.applications.set(apps),
       error: () => {}
     });
-
     this.adminService.getRoles().subscribe({
       next: roles => this.roles.set(roles),
       error: () => {}
     });
-
     this.adminService.getApplicationRoles().subscribe({
       next: ars => this.applicationRoles.set(ars),
       error: () => {}
     });
   }
 
+  // ── Assignment row management ─────────────────────────────────────────────
+
+  onRowAppChange(index: number, event: Event): void {
+    const appId = Number((event.target as HTMLSelectElement).value) || null;
+    const rows = [...this.assignmentRows()];
+    rows[index] = { appId, roleId: null }; // reset role when app changes
+    this.assignmentRows.set(rows);
+  }
+
+  onRowRoleChange(index: number, event: Event): void {
+    const roleId = Number((event.target as HTMLSelectElement).value) || null;
+    const rows = [...this.assignmentRows()];
+    rows[index] = { ...rows[index], roleId };
+    this.assignmentRows.set(rows);
+  }
+
+  addRow(): void {
+    this.assignmentRows.set([...this.assignmentRows(), { appId: null, roleId: null }]);
+  }
+
+  removeRow(index: number): void {
+    const rows = this.assignmentRows().filter((_, i) => i !== index);
+    this.assignmentRows.set(rows.length > 0 ? rows : [{ appId: null, roleId: null }]);
+  }
+
+  // ── Department / sub-department ───────────────────────────────────────────
+
   onDepartmentChange() {
     const deptId = this.createForm.value.departmentId ?? null;
     this.selectedDepartmentId.set(deptId);
     this.createForm.patchValue({ subDepartmentId: null });
+    if (deptId) {
+      this.adminService.getSubDepartmentsByDepartment(deptId).subscribe({
+        next: subDepts => this.subDepartments.set(subDepts),
+        error: () => this.subDepartments.set([])
+      });
+    } else {
+      this.subDepartments.set([]);
+    }
   }
 
-  onApplicationChange() {
-    const appId = this.createForm.value.applicationId ?? null;
-    this.selectedApplicationId.set(appId);
-    this.createForm.patchValue({ roleId: null });
-  }
+  // ── Submit ────────────────────────────────────────────────────────────────
 
   saveCreate() {
-    if (this.createForm.invalid) return;
+    if (this.createForm.invalid) {
+      this.createForm.markAllAsTouched();
+      return;
+    }
+
+    // Collect complete rows (both appId and roleId set)
+    const completePairs = this.assignmentRows().filter(r => r.appId && r.roleId);
+
+    // Deduplicate: silently collapse any accidental duplicate (appId+roleId) pairs
+    const seen = new Set<string>();
+    const uniquePairs = completePairs.filter(row => {
+      const key = `${row.appId}-${row.roleId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
     const formValue = this.createForm.getRawValue();
     this.loading.set(true);
     this.errorMessage.set(null);
 
-    const createData: Partial<UserDto> & { subDepartmentId?: number | null } = {
-      login: formValue.login,
-      prenom: formValue.prenom,
-      nom: formValue.nom,
-      email: formValue.email,
+    const createData: Partial<UserDto> = {
+      login:    formValue.login,
+      prenom:   formValue.prenom,
+      nom:      formValue.nom,
+      email:    formValue.email,
       authType: formValue.authType,
-      status: formValue.status || 'ACTIF',
-      applicationId: formValue.applicationId,
-      roleId: formValue.roleId,
+      status:   formValue.status || 'ACTIF',
       department: formValue.departmentId
         ? this.departments().find(d => d.id === formValue.departmentId)
         : null,
       subDepartmentId: formValue.subDepartmentId,
-      password: formValue.authType === 'LOCAL' ? formValue.password : undefined
+      password: formValue.authType === 'LOCAL' ? formValue.password : undefined,
+      // Use the parallel-arrays contract that createUser() already supports
+      applicationRoleApplicationIds: uniquePairs.map(r => r.appId as number),
+      applicationRoleRoleIds:        uniquePairs.map(r => r.roleId as number)
     };
 
     this.adminService.createUser(createData as UserDto).subscribe({
       next: () => this.router.navigate(['/admin/users']),
       error: (err) => {
-        this.errorMessage.set(err?.error?.message || 'Erreur lors de la création de l’utilisateur');
+        this.errorMessage.set(err?.error?.message || 'Erreur lors de la création de l\'utilisateur');
         this.loading.set(false);
       }
     });

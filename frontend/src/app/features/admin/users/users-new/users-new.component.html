@@ -19,13 +19,18 @@
 
   <div class="card">
     <form [formGroup]="createForm" (ngSubmit)="saveCreate()" class="form-section">
+
+      <!-- Identity -->
       <div class="form-row">
         <div class="form-group">
-          <label>Login</label>
+          <label>Login *</label>
           <input type="text" formControlName="login" class="form-input">
+          @if (createForm.get('login')?.invalid && createForm.get('login')?.touched) {
+            <div class="field-error">Login requis.</div>
+          }
         </div>
         <div class="form-group">
-          <label>Type d'authentification</label>
+          <label>Type d'authentification *</label>
           <select formControlName="authType" class="form-input">
             <option value="AD">AD / LDAP</option>
             <option value="LOCAL">Local</option>
@@ -35,19 +40,28 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label>Prénom</label>
+          <label>Prénom *</label>
           <input type="text" formControlName="prenom" class="form-input">
+          @if (createForm.get('prenom')?.invalid && createForm.get('prenom')?.touched) {
+            <div class="field-error">Prénom requis.</div>
+          }
         </div>
         <div class="form-group">
-          <label>Nom</label>
+          <label>Nom *</label>
           <input type="text" formControlName="nom" class="form-input">
+          @if (createForm.get('nom')?.invalid && createForm.get('nom')?.touched) {
+            <div class="field-error">Nom requis.</div>
+          }
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>Email</label>
+          <label>Email *</label>
           <input type="email" formControlName="email" class="form-input">
+          @if (createForm.get('email')?.invalid && createForm.get('email')?.touched) {
+            <div class="field-error">Email valide requis.</div>
+          }
         </div>
         <div class="form-group">
           <label>Statut</label>
@@ -65,34 +79,61 @@
         </div>
       }
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Application *</label>
-          <select formControlName="applicationId" class="form-input" (change)="onApplicationChange()">
-            <option [ngValue]="null">-- Sélectionner une application --</option>
-            @for (app of applications(); track app.id) {
-              <option [ngValue]="app.id">{{ app.code }} — {{ app.nom }}</option>
-            }
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Rôle *</label>
-          <select formControlName="roleId" class="form-input">
-            <option [ngValue]="null">-- Sélectionner un rôle --</option>
-            @for (role of filteredRoles(); track role.id) {
-              <option [ngValue]="role.id">{{ role.nom }}</option>
-            }
-          </select>
-          @if (selectedApplicationId() && filteredRoles().length === 0) {
-            <div class="field-hint">Aucun rôle n'est encore défini pour cette application dans APPLICATION_ROLES.</div>
+      <!-- Application + Role assignments -->
+      <div class="form-group assignments-group">
+        <label class="assignments-label">Affectations application / rôle</label>
+        <div class="assignments-list">
+          @for (row of assignmentRows(); track $index; let idx = $index) {
+            <div class="assignment-row">
+              <div class="assignment-selects">
+                <select
+                  class="form-input"
+                  [value]="row.appId ?? ''"
+                  (change)="onRowAppChange(idx, $event)"
+                >
+                  <option value="">-- Application --</option>
+                  @for (app of applications(); track app.id) {
+                    <option [value]="app.id">{{ app.code }} — {{ app.nom }}</option>
+                  }
+                </select>
+
+                <select
+                  class="form-input"
+                  [value]="row.roleId ?? ''"
+                  (change)="onRowRoleChange(idx, $event)"
+                  [disabled]="!row.appId"
+                >
+                  <option value="">-- Rôle --</option>
+                  @for (role of filteredRolesPerRow()[idx]; track role.id) {
+                    <option [value]="role.id">{{ role.nom }}</option>
+                  }
+                </select>
+              </div>
+
+              <button
+                type="button"
+                class="btn-remove-row"
+                (click)="removeRow(idx)"
+                [disabled]="assignmentRows().length === 1"
+                title="Supprimer cette affectation"
+              >×</button>
+            </div>
           }
+        </div>
+
+        <button type="button" class="btn btn-add-row" (click)="addRow()">
+          + Ajouter une autre affectation
+        </button>
+        <div class="field-hint">
+          Laissez vide pour créer l'utilisateur sans affectation. Les paires incomplètes (application sans rôle) sont ignorées.
         </div>
       </div>
 
+      <!-- Department / sub-department -->
       <div class="form-group">
         <label>Département</label>
         <select formControlName="departmentId" class="form-input" (change)="onDepartmentChange()">
-        <option [ngValue]="null">Non assigné</option>
+          <option [ngValue]="null">Non assigné</option>
           @for (dept of departments(); track dept.id) {
             <option [ngValue]="dept.id">{{ getDepartmentName(dept) }}</option>
           }
@@ -114,13 +155,10 @@
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
         <button type="submit" class="btn btn-primary" [disabled]="loading()">
-          @if (loading()) {
-            Chargement...
-          } @else {
-            Enregistrer
-          }
+          @if (loading()) { Chargement... } @else { Enregistrer }
         </button>
       </div>
+
     </form>
   </div>
 }

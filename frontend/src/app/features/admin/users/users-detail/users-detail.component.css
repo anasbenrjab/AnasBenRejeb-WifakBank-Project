@@ -361,3 +361,98 @@
 .alert-icon {
   font-size: 1.1rem;
 }
+
+/* ── Retirer button ───────────────────────────────────────────────────────── */
+.btn-revoke {
+  padding: 0.25rem 0.625rem;
+  border: 1px solid #fca5a5;
+  border-radius: 5px;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-revoke:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+/* ── Add assignment panel ─────────────────────────────────────────────────── */
+.add-assignment-panel {
+  padding: 1.25rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--wifak-neutral-100, #f1f5f9);
+  background: var(--wifak-neutral-50, #f8fafc);
+}
+
+.add-assignment-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--wifak-neutral-700, #374151);
+  margin: 0 0 0.75rem;
+}
+
+.add-assignment-row {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.form-input-inline {
+  flex: 1;
+  min-width: 160px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  background: #fff;
+}
+
+.form-input-inline:focus {
+  outline: none;
+  border-color: #1a4a7a;
+  box-shadow: 0 0 0 3px rgba(26, 74, 122, 0.1);
+}
+
+.form-input-inline:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.btn-add-assign {
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0.45rem 1rem;
+  font-size: 0.875rem;
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.375rem;
+}
+
+/* ── Alert inside card ────────────────────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.alert-icon {
+  flex-shrink: 0;
+}

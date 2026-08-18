@@ -7,7 +7,7 @@ import tn.esprit.wifakbankproject.dto.AppEntry;
 import tn.esprit.wifakbankproject.entity.Application;
 import tn.esprit.wifakbankproject.entity.User;
 import tn.esprit.wifakbankproject.exception.ResourceNotFoundException;
-import tn.esprit.wifakbankproject.repository.ApplicationRepository;
+import tn.esprit.wifakbankproject.repository.UserApplicationRoleRepository;
 import tn.esprit.wifakbankproject.repository.UserRepository;
 
 import java.util.List;
@@ -16,19 +16,25 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final UserRepository         userRepository;
-    private final ApplicationRepository applicationRepository;
+    private final UserRepository                 userRepository;
+    private final UserApplicationRoleRepository  userApplicationRoleRepository;
 
     @Transactional(readOnly = true)
     public List<AppEntry> getAuthorizedApps(String login) {
-        // Verify user exists
-        userRepository.findByLogin(login)
+        User user = userRepository.findByLogin(login)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable: " + login));
 
-        // Since roles are now standalone, return all ACTIVE applications
-        List<Application> apps = applicationRepository.findByStatus(Application.Status.ACTIVE);
-
-        return apps.stream()
+        // Return only ACTIVE applications the user has at least one role assignment for.
+        // A user may hold multiple roles on the same application — deduplicate by app id.
+        return userApplicationRoleRepository.findByUserId(user.getId()).stream()
+                .map(uar -> uar.getApplication())
+                .filter(app -> app.getStatus() == Application.Status.ACTIVE)
+                .collect(java.util.stream.Collectors.toMap(
+                        Application::getId,
+                        app -> app,
+                        (existing, duplicate) -> existing   // keep first on duplicate appId
+                ))
+                .values().stream()
                 .map(app -> AppEntry.builder()
                         .id(app.getId())
                         .code(app.getCode())

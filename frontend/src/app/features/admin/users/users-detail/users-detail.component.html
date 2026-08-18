@@ -109,6 +109,13 @@
       }
     </div>
 
+    @if (roleActionError()) {
+      <div class="alert alert-error" style="margin: 0 1.5rem 1rem;">
+        <span class="alert-icon">⚠</span>
+        {{ roleActionError() }}
+      </div>
+    }
+
     @if (!user()!.applicationRoles || user()!.applicationRoles!.length === 0) {
       <div class="empty-state">
         <i class="bi bi-key empty-icon"></i>
@@ -123,6 +130,7 @@
               <th>Code</th>
               <th>Rôle</th>
               <th>Description</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -137,11 +145,60 @@
                 <td><code class="badge-code">{{ ar.applicationCode }}</code></td>
                 <td><span class="badge badge-role">{{ ar.roleNom }}</span></td>
                 <td>{{ ar.roleDescription || '—' }}</td>
+                <td>
+                  <button
+                    class="btn-revoke"
+                    (click)="removeAssignment(ar.applicationId, ar.roleId)"
+                    title="Retirer cette affectation"
+                  >
+                    Retirer
+                  </button>
+                </td>
               </tr>
             }
           </tbody>
         </table>
       </div>
     }
+
+    <!-- Add assignment panel -->
+    <div class="add-assignment-panel">
+      <h4 class="add-assignment-title">Ajouter une affectation</h4>
+      <div class="add-assignment-row">
+        <select
+          class="form-input-inline"
+          [value]="addAppId() ?? ''"
+          (change)="onAddAppChange($event)"
+        >
+          <option value="">-- Application --</option>
+          @for (app of applications(); track app.id) {
+            <option [value]="app.id">{{ app.code }} — {{ app.nom }}</option>
+          }
+        </select>
+
+        <select
+          class="form-input-inline"
+          [value]="addRoleId() ?? ''"
+          (change)="onAddRoleChange($event)"
+          [disabled]="!addAppId()"
+        >
+          <option value="">-- Rôle --</option>
+          @for (role of filteredAddRoles(); track role.id) {
+            <option [value]="role.id">{{ role.nom }}</option>
+          }
+        </select>
+
+        <button
+          class="btn btn-primary btn-add-assign"
+          (click)="addAssignment()"
+          [disabled]="!addAppId() || !addRoleId() || adding()"
+        >
+          @if (adding()) { … } @else { Ajouter }
+        </button>
+      </div>
+      @if (addAppId() && filteredAddRoles().length === 0) {
+        <div class="field-hint">Aucun rôle défini pour cette application dans APPLICATION_ROLES.</div>
+      }
+    </div>
   </div>
 }
