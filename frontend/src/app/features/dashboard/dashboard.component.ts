@@ -42,8 +42,8 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  openApp(id: number): void {
-    this.router.navigate(['/dashboard/app', id]);
+  openApp(app: AppEntry): void {
+    this.router.navigate(['/dashboard/app', app.id]);
   }
 
   logout(): void {

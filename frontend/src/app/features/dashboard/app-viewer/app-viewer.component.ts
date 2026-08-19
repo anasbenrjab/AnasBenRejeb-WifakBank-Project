@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DashboardService } from '../../../core/services/dashboard.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { AppEntry } from '../../../core/models/dashboard.models';
 
 @Component({
@@ -17,6 +18,7 @@ export class AppViewerComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly dashboardService = inject(DashboardService);
+  private readonly authService = inject(AuthService);
 
   readonly app = signal<AppEntry | null>(null);
   readonly safeUrl = signal<SafeResourceUrl | null>(null);
@@ -47,11 +49,13 @@ export class AppViewerComponent implements OnInit {
           return;
         }
         this.app.set(found);
-        // bypassSecurityTrustResourceUrl tells Angular's sanitizer this URL
-        // is intentional. Note: this does NOT override the target server's
-        // X-Frame-Options or frame-ancestors CSP headers — those are enforced
-        // by the browser and must be configured on the intranet app servers.
-        this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(found.url));
+        // Append the JWT token so the target app can authenticate the user.
+        // bypassSecurityTrustResourceUrl suppresses Angular's sanitizer warning
+        // for the iframe src. The target server's X-Frame-Options / CSP
+        // frame-ancestors headers are enforced by the browser independently.
+        const token = this.authService.getToken();
+        const urlWithToken = token ? `${found.url}?token=${token}` : found.url;
+        this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(urlWithToken));
         this.loading.set(false);
       },
       error: () => {
