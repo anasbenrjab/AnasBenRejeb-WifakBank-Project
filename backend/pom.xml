@@ -115,6 +115,33 @@
                     </excludes>
                 </configuration>
             </plugin>
+
+            <!-- Flyway Maven plugin — allows manual repair/migrate/info commands -->
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <configuration>
+                    <url>jdbc:oracle:thin:@localhost:1521:XE</url>
+                    <user>C##dashboard_client_user</user>
+                    <password>dashboard_client_password</password>
+                    <locations>
+                        <location>classpath:db/migration</location>
+                    </locations>
+                    <baselineOnMigrate>true</baselineOnMigrate>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.oracle.database.jdbc</groupId>
+                        <artifactId>ojdbc11</artifactId>
+                        <version>21.9.0.0</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-database-oracle</artifactId>
+                        <version>10.10.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
         </plugins>
     </build>
 </project>

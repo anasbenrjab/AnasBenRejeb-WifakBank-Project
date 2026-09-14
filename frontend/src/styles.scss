@@ -35,3 +35,15 @@ a {
   color: var(--primary);
   text-decoration: none;
 }
+
+/* ── Iframe embedding ── */
+/*
+  IframeService.detect() adds body.in-iframe synchronously in AppComponent.ngOnInit
+  before any child renders, so this CSS fires on the very first paint — no flicker.
+  Only the header and logout-bar are hidden. Content remains visible.
+  These rules are a SAFETY NET — the primary fix is in AuthService (skip re-navigation
+  when already on /dashboard) and AppComponent (skip re-validation for same token).
+*/
+body.in-iframe .header {
+  display: none;
+}

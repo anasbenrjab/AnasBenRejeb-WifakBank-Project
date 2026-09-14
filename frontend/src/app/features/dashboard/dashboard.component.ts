@@ -2,6 +2,16 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService, DashboardData } from '../../core/services/dashboard.service';
+import { IframeService } from '../../core/services/iframe.service';
+
+interface AppCard {
+  id: string;
+  label: string;
+  icon: string;
+  color: string;
+  description: string;
+  url: string;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -10,14 +20,14 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
   template: `
     <div class="dashboard">
 
-      <!-- ── Header ── -->
+      <!-- ── Header (hidden via CSS when body.in-iframe is set) ── -->
       <header class="header">
         <div class="header-left">
           <div class="logo">
             <span class="logo-icon"></span>
             <span class="logo-text">WifakBank</span>
           </div>
-          <span class="app-name">Dashboard Client</span>
+          <span class="app-badge">Dashboard Client</span>
         </div>
         <div class="header-right">
           <div class="user-badge">
@@ -27,73 +37,81 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
               <span class="user-role">{{ primaryRole() }}</span>
             </div>
           </div>
-          <button class="logout-btn" (click)="logout()" title="Sign out">
-            <span>⏏</span> Sign Out
-          </button>
         </div>
       </header>
 
-      <!-- ── Main Content ── -->
+      <!-- ── Déconnexion — outside the header, always visible ── -->
+      <div class="logout-bar">
+        <button class="logout-btn" (click)="logout()" title="Déconnexion">
+          <span aria-hidden="true">⏏</span> Déconnexion
+        </button>
+      </div>
+
+      <!-- ── Main content — always visible ── -->
       <main class="content">
 
         <!-- Welcome banner -->
         <div class="welcome-banner">
-          <h1>{{ dashboardData()?.welcomeMessage ?? 'Welcome!' }}</h1>
-          <p>You are authenticated via WifakBank SSO. Last login: <strong>{{ dashboardData()?.lastLogin | date:'medium' }}</strong></p>
+          <h1>{{ dashboardData()?.welcomeMessage ?? 'Bienvenue!' }}</h1>
+          <p>
+            Authentifié via WifakBank SSO.
+            Dernière connexion :
+            <strong>{{ dashboardData()?.lastLogin | date:'medium' }}</strong>
+          </p>
         </div>
 
-        <!-- Stats grid -->
+        <!-- Stats row -->
         <section class="stats-grid">
           <div class="stat-card">
             <div class="stat-icon"></div>
             <div class="stat-value">{{ dashboardData()?.totalApplications ?? '—' }}</div>
-            <div class="stat-label">Connected Applications</div>
+            <div class="stat-label">Applications connectées</div>
           </div>
-
           <div class="stat-card">
             <div class="stat-icon"></div>
             <div class="stat-value">{{ dashboardData()?.activeSessions ?? '—' }}</div>
-            <div class="stat-label">Active Sessions</div>
+            <div class="stat-label">Sessions actives</div>
           </div>
-
           <div class="stat-card">
             <div class="stat-icon"></div>
             <div class="stat-value">{{ user()?.roles?.length ?? 0 }}</div>
-            <div class="stat-label">Assigned Roles</div>
+            <div class="stat-label">Rôles attribués</div>
           </div>
         </section>
 
-        <!-- Roles section -->
-        <section class="card roles-card">
-          <h2 class="card-title">Your Roles &amp; Permissions</h2>
+         
+
+        <!-- Roles -->
+        <section class="card">
+          <h2 class="card-title">Vos Rôles &amp; Permissions</h2>
           <div class="role-tags">
             @for (role of user()?.roles; track role) {
               <span class="role-tag">{{ role }}</span>
             } @empty {
-              <span class="no-roles">No roles assigned</span>
+              <span class="no-roles">Aucun rôle assigné</span>
             }
           </div>
         </section>
 
-        <!-- SSO info section -->
-        <section class="card sso-card">
-          <h2 class="card-title">SSO Session Info</h2>
+        <!-- SSO Info -->
+        <section class="card">
+          <h2 class="card-title">Informations de session SSO</h2>
           <div class="info-rows">
             <div class="info-row">
-              <span class="info-key">Authentication Method</span>
+              <span class="info-key">Méthode d'authentification</span>
               <span class="info-val badge badge-success">JWT SSO</span>
             </div>
             <div class="info-row">
-              <span class="info-key">Source Application</span>
+              <span class="info-key">Application source</span>
               <span class="info-val">WifakBankProject (port 4200)</span>
             </div>
             <div class="info-row">
-              <span class="info-key">Session Storage</span>
-              <span class="info-val badge badge-info">sessionStorage (tab-scoped)</span>
+              <span class="info-key">Stockage de session</span>
+              <span class="info-val badge badge-info">sessionStorage (onglet uniquement)</span>
             </div>
             <div class="info-row">
-              <span class="info-key">Token Validation</span>
-              <span class="info-val badge badge-success">✓ Verified by backend (port 8082)</span>
+              <span class="info-key">Validation du token</span>
+              <span class="info-val badge badge-success">✓ Vérifié par le backend (port 8082)</span>
             </div>
           </div>
         </section>
@@ -102,7 +120,6 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
     </div>
   `,
   styles: [`
-    /* ── Layout ── */
     .dashboard {
       min-height: 100vh;
       background: #f0f2f5;
@@ -128,7 +145,7 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
     .header-left {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
 
     .logo {
@@ -141,13 +158,13 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
 
     .logo-icon { font-size: 1.4rem; }
 
-    .app-name {
+    .app-badge {
       padding: 3px 10px;
       background: rgba(255,255,255,0.15);
       border-radius: 12px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 500;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
     }
 
     .header-right {
@@ -181,33 +198,36 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
       line-height: 1.2;
     }
 
-    .user-name {
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
+    .user-name  { font-weight: 600; font-size: 0.9rem; }
+    .user-role  { font-size: 0.75rem; opacity: 0.75; }
 
-    .user-role {
-      font-size: 0.75rem;
-      opacity: 0.75;
+    /* ── Déconnexion bar — always rendered, sits right below header ── */
+    .logout-bar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 32px;
+      background: #fff;
+      border-bottom: 1px solid #e8eaf6;
     }
 
     .logout-btn {
-      background: rgba(255,255,255,0.1);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.3);
-      padding: 7px 16px;
+      background: transparent;
+      color: #1a237e;
+      border: 1px solid #1a237e;
+      padding: 6px 16px;
       border-radius: 6px;
       font-size: 0.85rem;
-      font-weight: 500;
+      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: background 0.2s;
+      transition: background 0.2s, color 0.2s;
     }
 
     .logout-btn:hover {
-      background: rgba(211, 47, 47, 0.8);
-      border-color: transparent;
+      background: #d32f2f;
+      color: white;
+      border-color: #d32f2f;
     }
 
     /* ── Content ── */
@@ -220,7 +240,7 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
       gap: 24px;
     }
 
-    /* ── Welcome Banner ── */
+    /* ── Welcome banner ── */
     .welcome-banner {
       background: white;
       border-left: 5px solid #1a237e;
@@ -236,12 +256,9 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
       margin-bottom: 6px;
     }
 
-    .welcome-banner p {
-      color: #757575;
-      font-size: 0.9rem;
-    }
+    .welcome-banner p { color: #757575; font-size: 0.9rem; }
 
-    /* ── Stats Grid ── */
+    /* ── Stats ── */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -262,23 +279,59 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
       box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     }
 
-    .stat-icon { font-size: 2rem; margin-bottom: 10px; }
+    .stat-icon  { font-size: 2rem; margin-bottom: 10px; }
+    .stat-value { font-size: 2.5rem; font-weight: 700; color: #1a237e; line-height: 1; }
+    .stat-label { color: #757575; font-size: 0.85rem; margin-top: 8px; font-weight: 500; }
 
-    .stat-value {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: #1a237e;
-      line-height: 1;
+    /* ── App cards ── */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 16px;
     }
 
-    .stat-label {
-      color: #757575;
-      font-size: 0.85rem;
-      margin-top: 8px;
-      font-weight: 500;
+    .app-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 24px 16px;
+      background: white;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Inter', Arial, sans-serif;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      text-align: center;
     }
 
-    /* ── Generic Card ── */
+    .app-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+      border-color: var(--card-color, #1a237e);
+    }
+
+    .app-card:focus-visible {
+      outline: 3px solid var(--card-color, #1a237e);
+      outline-offset: 2px;
+    }
+
+    .app-card__icon {
+      font-size: 2rem;
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--card-color, #1a237e) 12%, white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app-card__label { font-size: 0.9rem; font-weight: 700; color: #212121; }
+    .app-card__desc  { font-size: 0.75rem; color: #757575; line-height: 1.3; }
+
+    /* ── Generic card ── */
     .card {
       background: white;
       padding: 28px;
@@ -295,12 +348,8 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
       border-bottom: 1px solid #e8eaf6;
     }
 
-    /* ── Role Tags ── */
-    .role-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
+    /* ── Roles ── */
+    .role-tags { display: flex; flex-wrap: wrap; gap: 10px; }
 
     .role-tag {
       background: #e8eaf6;
@@ -309,87 +358,69 @@ import { DashboardService, DashboardData } from '../../core/services/dashboard.s
       border-radius: 20px;
       font-size: 0.85rem;
       font-weight: 600;
-      letter-spacing: 0.3px;
     }
 
-    .no-roles {
-      color: #9e9e9e;
-      font-style: italic;
-    }
+    .no-roles { color: #9e9e9e; font-style: italic; }
 
-    /* ── Info Rows ── */
-    .info-rows {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    /* ── Info rows ── */
+    .info-rows { display: flex; flex-direction: column; }
 
     .info-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 0;
+      padding: 12px 0;
       border-bottom: 1px solid #f5f5f5;
     }
 
     .info-row:last-child { border-bottom: none; }
-
-    .info-key {
-      font-size: 0.875rem;
-      color: #616161;
-      font-weight: 500;
-    }
-
-    .info-val {
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
+    .info-key { font-size: 0.875rem; color: #616161; font-weight: 500; }
+    .info-val { font-size: 0.875rem; font-weight: 500; }
 
     /* ── Badges ── */
-    .badge {
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-
-    .badge-success {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
-
-    .badge-info {
-      background: #e3f2fd;
-      color: #1565c0;
-    }
+    .badge { padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+    .badge-success { background: #e8f5e9; color: #2e7d32; }
+    .badge-info    { background: #e3f2fd; color: #1565c0; }
 
     /* ── Responsive ── */
     @media (max-width: 640px) {
-      .header { padding: 0 16px; }
-      .content { padding: 16px; }
-      .user-info { display: none; }
-      .app-name { display: none; }
+      .header      { padding: 0 16px; }
+      .logout-bar  { padding: 8px 16px; }
+      .content     { padding: 16px; }
+      .user-info, .app-badge { display: none; }
     }
   `]
 })
 export class DashboardComponent implements OnInit {
-  private authService = inject(AuthService);
+  private authService    = inject(AuthService);
   private dashboardService = inject(DashboardService);
+  private iframeService  = inject(IframeService);
 
-  user = this.authService.user;
+  user          = this.authService.user;
   dashboardData = signal<DashboardData | null>(null);
+  isInIframe    = this.iframeService.isInIframe;   // kept for potential future use
 
-  /** First letter of username for avatar */
-  userInitial = () => (this.user()?.username?.[0] ?? 'U').toUpperCase();
+  userInitial  = () => (this.user()?.username?.[0] ?? 'U').toUpperCase();
+  primaryRole  = () => this.user()?.roles?.[0] ?? 'Utilisateur';
 
-  /** First role for display in header subtitle */
-  primaryRole = () => this.user()?.roles?.[0] ?? 'User';
+  readonly appCards: AppCard[] = [
+    { id: 'ged',    label: 'GED',    icon: '📁', color: '#1565c0', description: 'Gestion électronique des documents', url: 'http://localhost:4202' },
+    { id: 'crm',    label: 'CRM',    icon: '🤝', color: '#2e7d32', description: 'Gestion de la relation client',       url: 'http://localhost:4203' },
+    { id: 'credit', label: 'Crédit', icon: '💳', color: '#e65100', description: 'Suivi et gestion des crédits',        url: 'http://localhost:4204' },
+    { id: 'test',   label: 'TEST',   icon: '🧪', color: '#6a1b9a', description: 'Environnement de test',               url: 'http://localhost:4205' },
+    { id: 'one',    label: 'ONE',    icon: '⭐', color: '#c62828', description: 'Application principale',              url: 'http://localhost:4206' }
+  ];
 
   ngOnInit(): void {
     this.dashboardService.getData().subscribe({
       next: (data) => this.dashboardData.set(data),
-      error: (err) => console.error('Failed to load dashboard data:', err)
+      error: (err)  => console.error('Échec du chargement des données :', err)
     });
+  }
+
+  openApp(app: AppCard): void {
+    const token = this.authService.getToken();
+    window.open(`${app.url}?token=${token}`, '_blank');
   }
 
   logout(): void {

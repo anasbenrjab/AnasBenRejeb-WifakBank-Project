@@ -1,53 +1,42 @@
-import { Component, OnInit, OnDestroy, inject, signal, effect } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
+import { IframeService } from './core/services/iframe.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, CommonModule],
   template: `
-    <!-- Spinner shown until backend validation responds -->
+    <!-- router-outlet is always present — never conditionally removed from the DOM.
+         Removing and re-adding the outlet is what causes DashboardComponent to be
+         destroyed and recreated, stacking headers on each re-open from the portal.
+         Instead we overlay a splash screen on top while initializing. -->
+    <router-outlet />
+
     @if (!isInitialized()) {
       <div class="splash">
         <div class="spinner"></div>
-        <p>Connecting to WifakBank Portal...</p>
+        <p>Chargement...</p>
       </div>
-    }
-
-    <!-- Brief "redirecting" message shown when validation failed -->
-    @if (isInitialized() && !isAuthenticated()) {
-      <div class="splash">
-        <div class="lock-icon">🔒</div>
-        <h2>Session Required</h2>
-        <p>Redirecting to WifakBank Main Portal...</p>
-      </div>
-    }
-
-    <!-- Dashboard renders here once authenticated -->
-    @if (isInitialized() && isAuthenticated()) {
-      <router-outlet />
     }
   `,
   styles: [`
+    /* Splash overlays the router content while auth is initializing.
+       position:fixed keeps it on top regardless of what the router has rendered. */
     .splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: 100vh;
       background: #f0f2f5;
       gap: 16px;
       color: #1a237e;
       font-family: 'Inter', sans-serif;
-    }
-
-    .lock-icon { font-size: 48px; }
-
-    .splash h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
     }
 
     .splash p {
@@ -71,23 +60,24 @@ import { AuthService } from './core/services/auth.service';
 })
 export class AppComponent implements OnInit {
   private authService = inject(AuthService);
+  private iframeService = inject(IframeService);
 
-  isAuthenticated = this.authService.isAuthenticated;
   isInitialized = this.authService.isInitialized;
 
   ngOnInit(): void {
-    // Extract token from URL query param set by the main WifakBankProject portal
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    this.iframeService.detect();
 
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const returnUrl = urlParams.get('returnUrl');
+    if (returnUrl) {
+      sessionStorage.setItem('portalReturnUrl', returnUrl);
+    }
+
+    const token = urlParams.get('token');
     if (token) {
-      // Remove token from URL immediately so it doesn't sit in browser history
       window.history.replaceState({}, document.title, window.location.pathname);
-      // Store token and kick off backend validation — isInitialized flips to true
-      // only once the HTTP response (success or error) returns
       this.authService.setToken(token);
     }
-    // If no token in URL and no token in sessionStorage, AuthService constructor
-    // already set isInitialized = true, so the guard/redirect resolves instantly.
   }
 }
