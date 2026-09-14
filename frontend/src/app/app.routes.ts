@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { AdminLayoutComponent } from './features/admin/admin-layout.component';
+import { DashboardShellComponent } from './features/dashboard/dashboard-shell.component';
 
 export const routes: Routes = [
   {
@@ -16,6 +17,7 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    component: DashboardShellComponent,
     canActivate: [authGuard],
     children: [
       {

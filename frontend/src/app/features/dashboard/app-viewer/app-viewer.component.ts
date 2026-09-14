@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, ElementRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -13,12 +13,26 @@ import { AppEntry } from '../../../core/models/dashboard.models';
   templateUrl: './app-viewer.component.html',
   styleUrl: './app-viewer.component.css'
 })
-export class AppViewerComponent implements OnInit {
+export class AppViewerComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly dashboardService = inject(DashboardService);
   private readonly authService = inject(AuthService);
+  private readonly zone = inject(NgZone);
+
+  // Bound reference so we can remove the same listener in ngOnDestroy
+  private readonly messageListener = (event: MessageEvent) => {
+    // Only accept messages from the expected child app origins.
+    // The child app sends { type: 'LOGOUT' } before calling window.location.href.
+    if (event.data?.type === 'LOGOUT' || event.data?.type === 'PORTAL_RETURN') {
+      this.zone.run(() => {
+        this.app.set(null);
+        this.safeUrl.set(null);
+        this.router.navigate(['/dashboard']);
+      });
+    }
+  };
 
   readonly app = signal<AppEntry | null>(null);
   readonly safeUrl = signal<SafeResourceUrl | null>(null);
@@ -26,6 +40,11 @@ export class AppViewerComponent implements OnInit {
   readonly errorMessage = signal<string | null>(null);
 
   ngOnInit(): void {
+    // Listen for postMessage from the child app.
+    // The child app should call:
+    //   window.parent.postMessage({ type: 'LOGOUT' }, 'http://localhost:4200')
+    // before its own window.location.href redirect.
+    window.addEventListener('message', this.messageListener);
     const id = Number(this.route.snapshot.paramMap.get('id'));
 
     if (!id || isNaN(id)) {
@@ -49,12 +68,16 @@ export class AppViewerComponent implements OnInit {
           return;
         }
         this.app.set(found);
-        // Append the JWT token so the target app can authenticate the user.
-        // bypassSecurityTrustResourceUrl suppresses Angular's sanitizer warning
-        // for the iframe src. The target server's X-Frame-Options / CSP
-        // frame-ancestors headers are enforced by the browser independently.
+        // Build the iframe URL with two parameters:
+        //   ?token=JWT       — authenticates the user in the child app
+        //   &returnUrl=...   — tells the child app where to redirect on logout
+        // The child app should store returnUrl in sessionStorage on init and
+        // use it instead of its own /login route when the user signs out.
         const token = this.authService.getToken();
-        const urlWithToken = token ? `${found.url}?token=${token}` : found.url;
+        const returnUrl = encodeURIComponent(`${window.location.origin}/dashboard`);
+        const urlWithToken = token
+          ? `${found.url}?token=${token}&returnUrl=${returnUrl}`
+          : found.url;
         this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(urlWithToken));
         this.loading.set(false);
       },
@@ -66,6 +89,16 @@ export class AppViewerComponent implements OnInit {
   }
 
   back(): void {
+    // Clear the app signal before navigating so the viewer topbar
+    // empties immediately rather than persisting during the route transition.
+    this.app.set(null);
+    this.safeUrl.set(null);
     this.router.navigate(['/dashboard']);
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('message', this.messageListener);
+    this.app.set(null);
+    this.safeUrl.set(null);
   }
 }
