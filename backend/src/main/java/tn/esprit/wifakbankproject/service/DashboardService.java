@@ -11,30 +11,42 @@ import tn.esprit.wifakbankproject.repository.UserApplicationRoleRepository;
 import tn.esprit.wifakbankproject.repository.UserRepository;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final UserRepository                 userRepository;
-    private final UserApplicationRoleRepository  userApplicationRoleRepository;
+    private final UserRepository                userRepository;
+    private final UserApplicationRoleRepository userApplicationRoleRepository;
+    private final ApplicationRegistry          applicationRegistry;
 
+    /**
+     * Returns the list of ACTIVE applications the authenticated user can access.
+     *
+     * Phase 1 change: the ACTIVE-application filter now consults
+     * {@link ApplicationRegistry} (in-memory cache) instead of issuing a
+     * per-request {@code findByStatus(ACTIVE)} query against the DB.
+     *
+     * The USER_APPLICATION_ROLES query and the AppEntry mapping are unchanged.
+     * The JSON response shape is identical to before Phase 1.
+     */
     @Transactional(readOnly = true)
     public List<AppEntry> getAuthorizedApps(String login) {
         User user = userRepository.findByLogin(login)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable: " + login));
 
-        // Return only ACTIVE applications the user has at least one role assignment for.
-        // A user may hold multiple roles on the same application — deduplicate by app id.
+        // Snapshot the cache once — same reference for the entire call.
+        Map<Long, Application> activeApps = applicationRegistry.getActiveApplications();
+
+        // Collect app IDs the user holds at least one role on,
+        // then filter to only those present in the active-apps cache.
+        // Deduplication is implicit: Map.get() on a set of distinct IDs.
         return userApplicationRoleRepository.findByUserId(user.getId()).stream()
-                .map(uar -> uar.getApplication())
-                .filter(app -> app.getStatus() == Application.Status.ACTIVE)
-                .collect(java.util.stream.Collectors.toMap(
-                        Application::getId,
-                        app -> app,
-                        (existing, duplicate) -> existing   // keep first on duplicate appId
-                ))
-                .values().stream()
+                .map(uar -> uar.getApplication().getId())           // Long ids only
+                .distinct()                                         // deduplicate multi-role
+                .map(activeApps::get)                               // null if not ACTIVE
+                .filter(app -> app != null)                         // drop inactive / unknown
                 .map(app -> AppEntry.builder()
                         .id(app.getId())
                         .code(app.getCode())
