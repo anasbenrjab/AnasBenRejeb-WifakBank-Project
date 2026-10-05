@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AdminService } from '../../../core/services/admin.service';
 import { ApplicationDto, RoleDto } from '../../../core/models/auth.models';
+import { AppIconComponent } from '../../../shared/components/app-icon/app-icon.component';
 
 @Component({
   selector: 'app-applications',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, AppIconComponent],
   templateUrl: './applications.component.html',
   styleUrl: './applications.component.css'
 })
@@ -61,7 +62,11 @@ export class ApplicationsComponent implements OnInit {
   }
 
   deleteApplication(id: number): void {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette application?')) return;
+    if (!confirm(
+      'Marquer cette application comme supprimée ?\n\n' +
+      'Elle ne sera plus visible dans le dashboard des utilisateurs, ' +
+      'mais les affectations de rôles existantes seront conservées.'
+    )) return;
 
     this.adminService.deleteApplication(id).subscribe({
       next: () => this.loadData(),

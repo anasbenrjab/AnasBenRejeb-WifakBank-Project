@@ -19,52 +19,160 @@
 
   <div class="card">
     <form [formGroup]="createForm" (ngSubmit)="saveCreate()" class="form-section">
+
+      <!-- ── Identity ─────────────────────────────────────────────────── -->
       <div class="form-row">
         <div class="form-group">
-          <label>Code</label>
-          <input type="text" formControlName="code" class="form-input" />
+          <label for="new-code">Code</label>
+          <input id="new-code" type="text" formControlName="code" class="form-input"
+            [class.input-error]="codeError()" />
+          @if (codeError()) {
+            <span class="field-error">{{ codeError() }}</span>
+          }
         </div>
         <div class="form-group">
-          <label>Nom</label>
-          <input type="text" formControlName="nom" class="form-input" />
+          <label for="new-nom">Nom</label>
+          <input id="new-nom" type="text" formControlName="nom" class="form-input"
+            [class.input-error]="nomError()" />
+          @if (nomError()) {
+            <span class="field-error">{{ nomError() }}</span>
+          }
         </div>
         <div class="form-group">
-          <label>Statut</label>
-          <select formControlName="status" class="form-input">
+          <label for="new-status">Statut</label>
+          <select id="new-status" formControlName="status" class="form-input">
             <option value="ACTIVE">Actif</option>
             <option value="INACTIVE">Inactif</option>
           </select>
         </div>
       </div>
+
+      <!-- ── URL ──────────────────────────────────────────────────────── -->
+      <div class="form-group">
+        <label for="new-url">URL</label>
+        <input id="new-url" type="text" formControlName="url" class="form-input"
+          [class.input-error]="urlError()" />
+        @if (urlError()) {
+          <span class="field-error">{{ urlError() }}</span>
+        }
+      </div>
+
+      <!-- ── Icône ─────────────────────────────────────────────────────
+           Always Bootstrap Icons mode. iconType is hardcoded in the
+           payload as 'BOOTSTRAP_ICON' — not user-selectable.
+      ─────────────────────────────────────────────────────────────────── -->
+      <div class="form-group">
+        <label>Icône</label>
+
+        <!-- Live preview -->
+        <div class="icon-preview-row">
+          <div class="icon-preview-box">
+            <app-icon
+              [icon]="createForm.controls.icon.value"
+              iconType="BOOTSTRAP_ICON"
+              size="xl"
+            />
+          </div>
+          <span class="icon-preview-label">
+            {{ createForm.controls.icon.value || '(aucune icône)' }}
+          </span>
+        </div>
+
+        <!-- Search -->
+        <input
+          type="text"
+          class="form-input icon-search-input"
+          placeholder="Rechercher une icône…"
+          [value]="iconSearch()"
+          (input)="iconSearch.set($any($event.target).value)"
+          aria-label="Rechercher une icône Bootstrap"
+        />
+
+        <!-- Scrollable icon grid -->
+        <div class="icon-grid" role="listbox" aria-label="Sélecteur d'icônes">
+          @for (name of filteredIcons; track name) {
+            <button
+              type="button"
+              class="icon-grid-item"
+              [class.selected]="createForm.controls.icon.value === 'bi-' + name"
+              [title]="'bi-' + name"
+              [attr.aria-label]="'bi-' + name"
+              [attr.aria-selected]="createForm.controls.icon.value === 'bi-' + name"
+              (click)="createForm.controls.icon.setValue('bi-' + name)"
+            >
+              <i class="bi" [class]="'bi-' + name"></i>
+            </button>
+          }
+          @if (filteredIcons.length === 0) {
+            <p class="icon-grid-empty">Aucune icône trouvée pour « {{ iconSearch() }} ».</p>
+          }
+        </div>
+
+        <!-- Manual text entry fallback -->
+        <small class="form-hint">
+          Cliquez sur une icône pour la sélectionner, ou saisissez directement
+          le nom complet (ex: <code>bi-folder</code>) ci-dessous.
+        </small>
+        <input
+          type="text"
+          class="form-input"
+          formControlName="icon"
+          placeholder="bi-app"
+          aria-label="Nom de l'icône Bootstrap (ex: bi-folder)"
+        />
+      </div>
+
+      <!-- ── Phase 2: launch behaviour ────────────────────────────────── -->
       <div class="form-row">
         <div class="form-group">
-          <label>URL</label>
-          <input type="text" formControlName="url" class="form-input" />
+          <label for="new-launchMode">Mode d'ouverture</label>
+          <select id="new-launchMode" formControlName="launchMode" class="form-input">
+            <option value="IFRAME">Iframe (intégré)</option>
+            <option value="NEW_TAB">Nouvel onglet</option>
+            <option value="REDIRECT">Redirection</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>Icon</label>
-          <input type="text" formControlName="icon" class="form-input" />
+          <label for="new-category">Catégorie</label>
+          <input
+            id="new-category"
+            type="text"
+            formControlName="category"
+            class="form-input"
+            placeholder="Ex: Finance, RH…"
+            maxlength="100"
+          />
+        </div>
+        <div class="form-group">
+          <label for="new-displayOrder">Ordre d'affichage</label>
+          <input
+            id="new-displayOrder"
+            type="number"
+            formControlName="displayOrder"
+            class="form-input"
+            min="0"
+            placeholder="0"
+          />
         </div>
       </div>
+
+      <!-- ── Department ────────────────────────────────────────────────── -->
       <div class="form-group">
-        <label>Département</label>
-        <select formControlName="departmentId" class="form-input">
+        <label for="new-dept">Département</label>
+        <select id="new-dept" formControlName="departmentId" class="form-input">
           <option [ngValue]="null">Non assigné</option>
           @for (dept of departments(); track dept.id) {
             <option [ngValue]="dept.id">{{ getDepartmentName(dept) }}</option>
           }
         </select>
       </div>
+
+      <!-- ── Roles whitelist ───────────────────────────────────────────── -->
       <div class="form-group">
         <label>Rôles disponibles pour cette application</label>
         <div class="checkbox-grid">
-          <!-- "Aucun rôle" shortcut — pure UI, sends empty roleIds to backend -->
           <label class="checkbox-item checkbox-item-none" [class.checked]="noRoleChecked">
-            <input
-              type="checkbox"
-              [checked]="noRoleChecked"
-              (change)="selectNoRole()"
-            />
+            <input type="checkbox" [checked]="noRoleChecked" (change)="selectNoRole()" />
             <span class="checkbox-label-text">
               <span class="checkbox-title">Aucun rôle</span>
               <span class="checkbox-subtitle">Aucun accès spécifique requis</span>
@@ -88,10 +196,13 @@
           }
         </div>
       </div>
+
+      <!-- ── Description ──────────────────────────────────────────────── -->
       <div class="form-group">
-        <label>Description</label>
-        <textarea formControlName="description" class="form-input" rows="3"></textarea>
+        <label for="new-desc">Description</label>
+        <textarea id="new-desc" formControlName="description" class="form-input" rows="3"></textarea>
       </div>
+
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" (click)="cancel()">Annuler</button>
         <button type="submit" class="btn btn-primary" [disabled]="loading()">

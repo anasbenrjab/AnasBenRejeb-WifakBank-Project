@@ -56,6 +56,11 @@ export interface ApplicationDto {
   departmentName?: string | null;
   roleIds?: number[] | null;
   roles?: RoleDto[] | null;
+  // Phase 2 fields — must stay at the end, mirror backend ApplicationDto.java
+  launchMode?: 'IFRAME' | 'NEW_TAB' | 'REDIRECT';
+  category?: string | null;
+  displayOrder?: number | null;
+  iconType?: 'BOOTSTRAP_ICON' | 'URL' | 'UPLOAD';
 }
 
 export interface RoleDto {
@@ -108,4 +113,6 @@ export interface ErrorResponse {
   status: number;
   message: string;
   timestamp: string;
+  /** Present on 409 when the error maps to a specific form field ("code" | "nom" | "url"). */
+  field?: string | null;
 }

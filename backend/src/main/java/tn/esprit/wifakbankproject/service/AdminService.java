@@ -1,6 +1,7 @@
 package tn.esprit.wifakbankproject.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import tn.esprit.wifakbankproject.entity.SubDepartment;
 import tn.esprit.wifakbankproject.exception.DuplicateResourceException;
 import tn.esprit.wifakbankproject.exception.ResourceInUseException;
 import tn.esprit.wifakbankproject.exception.ResourceNotFoundException;
+import tn.esprit.wifakbankproject.event.ApplicationChangedEvent;
 import tn.esprit.wifakbankproject.repository.ApplicationRepository;
 import tn.esprit.wifakbankproject.repository.ApplicationRoleRepository;
 import tn.esprit.wifakbankproject.repository.AuditLogRepository;
@@ -53,6 +55,7 @@ public class AdminService {
     private final AuditLogRepository auditLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final SubDepartmentRepository subDepartmentRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // Users
     public List<UserDto> getAllUsers() {
@@ -260,7 +263,7 @@ public class AdminService {
 
     // Departments
     public List<DepartmentDto> getAllDepartments() {
-        return departmentRepository.findAll().stream()
+        return departmentRepository.findByDeletedFalse().stream()
                 .map(this::mapToDepartmentDto)
                 .collect(Collectors.toList());
     }
@@ -274,6 +277,9 @@ public class AdminService {
     public DepartmentDto createDepartment(DepartmentDto departmentDto) {
         if (departmentRepository.existsByCode(departmentDto.getCode())) {
             throw new DuplicateResourceException("Ce code de département existe déjà");
+        }
+        if (departmentRepository.existsByNameIgnoreCase(departmentDto.getName())) {
+            throw new DuplicateResourceException("Ce nom de département existe déjà.");
         }
         Department department = Department.builder()
                 .code(departmentDto.getCode())
@@ -289,6 +295,9 @@ public class AdminService {
         if (departmentRepository.existsByCodeAndIdNot(departmentDto.getCode(), id)) {
             throw new DuplicateResourceException("Ce code de département existe déjà");
         }
+        if (departmentRepository.existsByNameIgnoreCaseAndIdNot(departmentDto.getName(), id)) {
+            throw new DuplicateResourceException("Ce nom de département existe déjà.");
+        }
         department.setCode(departmentDto.getCode());
         department.setName(departmentDto.getName());
         department.setDescription(departmentDto.getDescription());
@@ -296,12 +305,22 @@ public class AdminService {
     }
 
     public void deleteDepartment(Long id) {
-        departmentRepository.deleteById(id);
+        Department department = departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+        department.setDeleted(true);
+        departmentRepository.save(department);
+    }
+
+    public DepartmentDto restoreDepartment(Long id) {
+        Department department = departmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+        department.setDeleted(false);
+        return mapToDepartmentDto(departmentRepository.save(department));
     }
 
     // Roles
     public List<RoleDto> getAllRoles() {
-        return roleRepository.findAll().stream()
+        return roleRepository.findByDeletedFalse().stream()
                 .map(this::mapToRoleDto)
                 .collect(Collectors.toList());
     }
@@ -313,8 +332,8 @@ public class AdminService {
     }
 
     public RoleDto createRole(RoleDto roleDto) {
-        if (roleRepository.existsByNom(roleDto.getNom())) {
-            throw new DuplicateResourceException("Ce nom de rôle existe déjà");
+        if (roleRepository.existsByNomIgnoreCase(roleDto.getNom())) {
+            throw new DuplicateResourceException("Ce nom de rôle existe déjà.", "nom");
         }
         Role role = Role.builder()
                 .nom(roleDto.getNom())
@@ -326,21 +345,27 @@ public class AdminService {
     public RoleDto updateRole(Long id, RoleDto roleDto) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-        if (roleRepository.existsByNomAndIdNot(roleDto.getNom(), id)) {
-            throw new DuplicateResourceException("Ce nom de rôle existe déjà");
+        if (roleRepository.existsByNomIgnoreCaseAndIdNot(roleDto.getNom(), id)) {
+            throw new DuplicateResourceException("Ce nom de rôle existe déjà.", "nom");
         }
-
         role.setNom(roleDto.getNom());
         role.setDescription(roleDto.getDescription());
         return mapToRoleDto(roleRepository.save(role));
     }
 
     public void deleteRole(Long id) {
-        if (userApplicationRoleRepository.existsByRoleId(id)
-                || applicationRoleRepository.findByRoleId(id).size() > 0) {
-            throw new ResourceInUseException("Ce rôle est encore assigné à des utilisateurs ou applications. Veuillez d'abord révoquer ce rôle avant de le supprimer.");
-        }
-        roleRepository.deleteById(id);
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        // Soft-delete: no cascade, no reference checks — data is preserved.
+        role.setDeleted(true);
+        roleRepository.save(role);
+    }
+
+    public RoleDto restoreRole(Long id) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+        role.setDeleted(false);
+        return mapToRoleDto(roleRepository.save(role));
     }
 
     // User Application-Role Assignment
@@ -400,7 +425,7 @@ public class AdminService {
 
     // Applications
     public List<ApplicationDto> getAllApplications() {
-        return applicationRepository.findAll().stream()
+        return applicationRepository.findByDeletedFalse().stream()
                 .map(this::mapToApplicationDto)
                 .collect(Collectors.toList());
     }
@@ -412,19 +437,57 @@ public class AdminService {
     }
 
     public ApplicationDto createApplication(ApplicationDto applicationDto) {
-        if (applicationRepository.existsByCode(applicationDto.getCode())) {
-            throw new DuplicateResourceException("Ce code d'application existe déjà");
+        // ── Normalization ───────────────────────────────────────────────────────
+        // Performed before every uniqueness check and before persisting so that
+        // the stored value is canonical and comparisons are deterministic.
+        //
+        // code : trim + uppercase
+        // nom  : trim only (stored as-is; comparisons are case-insensitive)
+        // url  : trim + lowercase + strip single trailing slash
+        //        NOTE: only the scheme, host, and path are lowercased as a whole.
+        //        Path segments that are case-sensitive on the target server
+        //        (e.g. /Api/v1 vs /api/v1) will compare as equal — this is a
+        //        known limitation. DB-level UNIQUE constraints are intentionally
+        //        NOT added; enforcement is at the service layer only.
+        String normalizedCode = applicationDto.getCode().trim().toUpperCase();
+        String normalizedNom  = applicationDto.getNom().trim();
+        String rawUrl         = applicationDto.getUrl() == null ? "" : applicationDto.getUrl().trim();
+        String normalizedUrl  = rawUrl.toLowerCase();
+        if (normalizedUrl.endsWith("/")) {
+            normalizedUrl = normalizedUrl.substring(0, normalizedUrl.length() - 1);
+        }
+
+        // ── Uniqueness checks (all rows, including soft-deleted) ───────────────
+        if (applicationRepository.existsByCode(normalizedCode)) {
+            throw new DuplicateResourceException("Ce code d'application existe déjà.", "code");
+        }
+        if (applicationRepository.existsByNomIgnoreCase(normalizedNom)) {
+            throw new DuplicateResourceException("Ce nom d'application existe déjà.", "nom");
+        }
+        if (!normalizedUrl.isBlank() && applicationRepository.existsByUrlIgnoreCase(normalizedUrl)) {
+            throw new DuplicateResourceException("Cette URL est déjà utilisée par une autre application.", "url");
         }
 
         Application.ApplicationBuilder builder = Application.builder()
-                .code(applicationDto.getCode())
-                .nom(applicationDto.getNom())
+                .code(normalizedCode)
+                .nom(normalizedNom)
                 .description(applicationDto.getDescription())
-                .url(applicationDto.getUrl())
+                .url(normalizedUrl.isBlank() ? applicationDto.getUrl() : normalizedUrl)
                 .icon(applicationDto.getIcon())
+                .iconType(applicationDto.getIconType() != null
+                        ? Application.IconType.valueOf(applicationDto.getIconType())
+                        : Application.IconType.BOOTSTRAP_ICON)
                 .status(applicationDto.getStatus() != null
                         ? Application.Status.valueOf(applicationDto.getStatus())
-                        : Application.Status.ACTIVE);
+                        : Application.Status.ACTIVE)
+                // Phase 2: new fields — fall back to entity @Builder.Default if not supplied
+                .launchMode(applicationDto.getLaunchMode() != null
+                        ? Application.LaunchMode.valueOf(applicationDto.getLaunchMode())
+                        : Application.LaunchMode.IFRAME)
+                .category(applicationDto.getCategory())
+                .displayOrder(applicationDto.getDisplayOrder() != null
+                        ? applicationDto.getDisplayOrder()
+                        : 0);
 
         if (applicationDto.getDepartmentId() != null) {
             Department dept = departmentRepository.findById(applicationDto.getDepartmentId())
@@ -448,6 +511,7 @@ public class AdminService {
             }
         }
 
+        eventPublisher.publishEvent(new ApplicationChangedEvent(this));
         return mapToApplicationDto(application);
     }
 
@@ -455,17 +519,44 @@ public class AdminService {
         Application application = applicationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
 
-        if (applicationRepository.existsByCodeAndIdNot(applicationDto.getCode(), id)) {
-            throw new DuplicateResourceException("Ce code d'application existe déjà");
+        // ── Normalization (same rules as createApplication) ────────────────────
+        String normalizedCode = applicationDto.getCode().trim().toUpperCase();
+        String normalizedNom  = applicationDto.getNom().trim();
+        String rawUrl         = applicationDto.getUrl() == null ? "" : applicationDto.getUrl().trim();
+        String normalizedUrl  = rawUrl.toLowerCase();
+        if (normalizedUrl.endsWith("/")) {
+            normalizedUrl = normalizedUrl.substring(0, normalizedUrl.length() - 1);
         }
 
-        application.setCode(applicationDto.getCode());
-        application.setNom(applicationDto.getNom());
+        // ── Uniqueness checks — exclude self via ...AndIdNot variants ──────────
+        if (applicationRepository.existsByCodeAndIdNot(normalizedCode, id)) {
+            throw new DuplicateResourceException("Ce code d'application existe déjà.", "code");
+        }
+        if (applicationRepository.existsByNomIgnoreCaseAndIdNot(normalizedNom, id)) {
+            throw new DuplicateResourceException("Ce nom d'application existe déjà.", "nom");
+        }
+        if (!normalizedUrl.isBlank() && applicationRepository.existsByUrlIgnoreCaseAndIdNot(normalizedUrl, id)) {
+            throw new DuplicateResourceException("Cette URL est déjà utilisée par une autre application.", "url");
+        }
+
+        application.setCode(normalizedCode);
+        application.setNom(normalizedNom);
         application.setDescription(applicationDto.getDescription());
-        application.setUrl(applicationDto.getUrl());
+        application.setUrl(normalizedUrl.isBlank() ? applicationDto.getUrl() : normalizedUrl);
         application.setIcon(applicationDto.getIcon());
+        if (applicationDto.getIconType() != null) {
+            application.setIconType(Application.IconType.valueOf(applicationDto.getIconType()));
+        }
         if (applicationDto.getStatus() != null) {
             application.setStatus(Application.Status.valueOf(applicationDto.getStatus()));
+        }
+        // Phase 2: new fields
+        if (applicationDto.getLaunchMode() != null) {
+            application.setLaunchMode(Application.LaunchMode.valueOf(applicationDto.getLaunchMode()));
+        }
+        application.setCategory(applicationDto.getCategory());
+        if (applicationDto.getDisplayOrder() != null) {
+            application.setDisplayOrder(applicationDto.getDisplayOrder());
         }
 
         if (applicationDto.getDepartmentId() != null) {
@@ -528,35 +619,29 @@ public class AdminService {
             }
         }
 
-        return mapToApplicationDto(applicationRepository.save(application));
+        ApplicationDto result = mapToApplicationDto(applicationRepository.save(application));
+        eventPublisher.publishEvent(new ApplicationChangedEvent(this));
+        return result;
     }
 
     public void deleteApplication(Long id) {
-        int roleDefinitions = applicationRoleRepository.findByApplicationId(id).size();
-        int userAssignments = userApplicationRoleRepository.findByApplicationId(id).size();
+        Application application = applicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
 
-        if (roleDefinitions > 0 || userAssignments > 0) {
-            StringBuilder msg = new StringBuilder(
-                "Impossible de supprimer cette application : ");
-            if (roleDefinitions > 0 && userAssignments > 0) {
-                msg.append(roleDefinitions)
-                   .append(" rôle(s) défini(s) et ")
-                   .append(userAssignments)
-                   .append(" utilisateur(s) assigné(s) sont encore liés. ")
-                   .append("Supprimez d'abord les affectations et définitions de rôles.");
-            } else if (roleDefinitions > 0) {
-                msg.append(roleDefinitions)
-                   .append(" rôle(s) sont encore définis pour cette application. ")
-                   .append("Supprimez d'abord les définitions de rôles.");
-            } else {
-                msg.append(userAssignments)
-                   .append(" utilisateur(s) ont encore accès à cette application. ")
-                   .append("Révoquez d'abord ces accès.");
-            }
-            throw new ResourceInUseException(msg.toString());
-        }
+        // Soft-delete: mark deleted, preserve all role/user assignment data.
+        // APPLICATION_ROLES and USER_APPLICATION_ROLES rows are intentionally kept.
+        application.setDeleted(true);
+        applicationRepository.save(application);
+        eventPublisher.publishEvent(new ApplicationChangedEvent(this));
+    }
 
-        applicationRepository.deleteById(id);
+    public ApplicationDto restoreApplication(Long id) {
+        Application application = applicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found"));
+        application.setDeleted(false);
+        applicationRepository.save(application);
+        eventPublisher.publishEvent(new ApplicationChangedEvent(this));
+        return mapToApplicationDto(application);
     }
 
     // Mappers
@@ -634,11 +719,22 @@ public class AdminService {
                 .description(application.getDescription())
                 .url(application.getUrl())
                 .icon(application.getIcon())
+                .iconType(application.getIconType() != null
+                        ? application.getIconType().name()
+                        : "BOOTSTRAP_ICON")
                 .status(application.getStatus().name())
                 .departmentId(application.getDepartment() != null ? application.getDepartment().getId() : null)
                 .departmentName(application.getDepartment() != null ? application.getDepartment().getName() : null)
                 .roleIds(roleIds)
                 .roles(roleDtos)
+                // Phase 2: new fields
+                .launchMode(application.getLaunchMode() != null
+                        ? application.getLaunchMode().name()
+                        : "IFRAME")
+                .category(application.getCategory())
+                .displayOrder(application.getDisplayOrder() != null
+                        ? application.getDisplayOrder()
+                        : 0)
                 .build();
     }
 

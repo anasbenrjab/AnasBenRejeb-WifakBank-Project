@@ -68,11 +68,16 @@ public class ApplicationRegistry {
      * Periodic refresh — runs every 60 s after the previous execution completes.
      * Public so that it can be called from tests without needing Spring's
      * task scheduler to be running.
+     *
+     * Only caches ACTIVE, non-deleted applications.
+     * Soft-deleted apps (deleted = true) are excluded at the query level,
+     * so they are evicted from the cache immediately when the event-driven
+     * refresh fires after a soft-delete.
      */
     @Scheduled(fixedDelay = 60_000)
     public void refresh() {
         Map<Long, Application> snapshot = applicationRepository
-                .findByStatus(Application.Status.ACTIVE)
+                .findByStatusAndDeletedFalse(Application.Status.ACTIVE)
                 .stream()
                 .collect(Collectors.toUnmodifiableMap(
                         Application::getId,

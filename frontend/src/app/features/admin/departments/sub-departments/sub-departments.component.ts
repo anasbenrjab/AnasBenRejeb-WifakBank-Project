@@ -88,7 +88,10 @@ export class SubDepartmentsComponent implements OnInit {
   }
 
   deleteSubDepartment(id: number): void {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce sous-département?')) return;
+    if (!confirm(
+      'Marquer ce sous-département comme supprimé ?\n\n' +
+      'Les utilisateurs qui y sont rattachés seront conservés.'
+    )) return;
 
     this.adminService.deleteSubDepartment(id).subscribe({
       next: () => this.loadData(),

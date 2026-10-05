@@ -4,11 +4,12 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { AppEntry } from '../../core/models/dashboard.models';
+import { AppIconComponent } from '../../shared/components/app-icon/app-icon.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, AppIconComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
@@ -43,7 +44,15 @@ export class DashboardComponent implements OnInit {
   }
 
   openApp(app: AppEntry): void {
-    this.router.navigate(['/dashboard/app', app.id]);
+    const mode = app.launchMode ?? 'IFRAME';
+    if (mode === 'NEW_TAB') {
+      window.open(app.url, '_blank', 'noopener,noreferrer');
+    } else if (mode === 'REDIRECT') {
+      window.location.href = app.url;
+    } else {
+      // IFRAME (default) — existing behaviour
+      this.router.navigate(['/dashboard/app', app.id]);
+    }
   }
 
   logout(): void {

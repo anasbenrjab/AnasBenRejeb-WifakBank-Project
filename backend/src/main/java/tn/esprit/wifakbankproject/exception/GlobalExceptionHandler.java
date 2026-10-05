@@ -30,8 +30,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateResourceException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ErrorResponse(409, ex.getMessage(), LocalDateTime.now()));
+        ErrorResponse body = ErrorResponse.builder()
+                .status(409)
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .field(ex.getField())          // null when no field context → omitted by @JsonInclude
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @ExceptionHandler(ResourceInUseException.class)

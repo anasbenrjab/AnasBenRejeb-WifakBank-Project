@@ -3,6 +3,11 @@ package tn.esprit.wifakbankproject.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Soft-delete: run before first deployment of this change:
+ *   ALTER TABLE DEPARTMENTS ADD (DELETED NUMBER(1) DEFAULT 0 NOT NULL);
+ * Hibernate 6 maps Boolean → NUMBER(1) on Oracle via OracleDialect.
+ */
 @Entity
 @Table(name = "DEPARTMENTS")
 @Getter
@@ -25,4 +30,15 @@ public class Department {
 
     @Column(length = 500)
     private String description;
+
+    /**
+     * Soft-delete flag. When true the department is hidden from all lists and pickers.
+     * Sub-departments and users linked to this department are NOT affected.
+     *
+     * Oracle DDL (run before first deploy):
+     *   ALTER TABLE DEPARTMENTS ADD (DELETED NUMBER(1) DEFAULT 0 NOT NULL);
+     */
+    @Column(name = "DELETED", nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
 }

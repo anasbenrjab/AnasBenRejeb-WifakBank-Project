@@ -112,20 +112,17 @@ public class DataInitializer implements CommandLineRunner {
         Department commercial = departmentRepository.findByCode("COMMERCIAL").orElse(null);
 
         applicationRepository.findByCode("DOI").orElseGet(() ->
-            // TEMPORARY TEST URL — replace with http://doi.wifakbank.tn once the
-            // intranet server's X-Frame-Options / frame-ancestors CSP headers are
-            // confirmed to allow framing from this app's origin.
-            applicationRepository.save(Application.builder().code("DOI").nom("Dématérialisation").description("Gestion documentaire dématérialisée").url("https://en.wikipedia.org/wiki/Angular_(web_framework)").icon("description").authType("AD").status(Application.Status.ACTIVE).department(it).build()));
+            applicationRepository.save(Application.builder().code("DOI").nom("Dématérialisation").description("Gestion documentaire dématérialisée").url("https://en.wikipedia.org/wiki/Angular_(web_framework)").icon("bi-file-earmark-text").iconType(Application.IconType.BOOTSTRAP_ICON).authType("AD").status(Application.Status.ACTIVE).department(it).build()));
         applicationRepository.findByCode("GED").orElseGet(() ->
-            applicationRepository.save(Application.builder().code("GED").nom("GED").description("Gestion électronique des documents").url("http://ged.wifakbank.tn").icon("folder").authType("AD").status(Application.Status.ACTIVE).department(it).build()));
+            applicationRepository.save(Application.builder().code("GED").nom("GED").description("Gestion électronique des documents").url("http://ged.wifakbank.tn").icon("bi-archive").iconType(Application.IconType.BOOTSTRAP_ICON).authType("AD").status(Application.Status.ACTIVE).department(it).build()));
         applicationRepository.findByCode("CRM").orElseGet(() ->
-            applicationRepository.save(Application.builder().code("CRM").nom("CRM").description("Gestion de la relation client").url("http://crm.wifakbank.tn").icon("people").authType("AD").status(Application.Status.ACTIVE).department(commercial).build()));
+            applicationRepository.save(Application.builder().code("CRM").nom("CRM").description("Gestion de la relation client").url("http://crm.wifakbank.tn").icon("bi-people").iconType(Application.IconType.BOOTSTRAP_ICON).authType("AD").status(Application.Status.ACTIVE).department(commercial).build()));
         applicationRepository.findByCode("CREDIT").orElseGet(() ->
-            applicationRepository.save(Application.builder().code("CREDIT").nom("Crédit").description("Gestion des dossiers de crédit").url("http://credit.wifakbank.tn").icon("account_balance").authType("AD").status(Application.Status.ACTIVE).department(finance).build()));
+            applicationRepository.save(Application.builder().code("CREDIT").nom("Crédit").description("Gestion des dossiers de crédit").url("http://credit.wifakbank.tn").icon("bi-credit-card").iconType(Application.IconType.BOOTSTRAP_ICON).authType("AD").status(Application.Status.ACTIVE).department(finance).build()));
         applicationRepository.findByCode("RH").orElseGet(() ->
-            applicationRepository.save(Application.builder().code("RH").nom("Ressources Humaines").description("Gestion du personnel").url("http://rh.wifakbank.tn").icon("badge").authType("AD").status(Application.Status.ACTIVE).department(rh).build()));
+            applicationRepository.save(Application.builder().code("RH").nom("Ressources Humaines").description("Gestion du personnel").url("http://rh.wifakbank.tn").icon("bi-person-badge").iconType(Application.IconType.BOOTSTRAP_ICON).authType("AD").status(Application.Status.ACTIVE).department(rh).build()));
         applicationRepository.findByCode("SYSTEM").orElseGet(() ->
-            applicationRepository.save(Application.builder().code("SYSTEM").nom("Admin Portal").description("Portail d'administration Wifak Bank").icon("shield-lock").authType("AD").status(Application.Status.ACTIVE).department(it).build()));
+            applicationRepository.save(Application.builder().code("SYSTEM").nom("Admin Portal").description("Portail d'administration Wifak Bank").icon("bi-shield-lock").iconType(Application.IconType.BOOTSTRAP_ICON).authType("AD").status(Application.Status.ACTIVE).department(it).build()));
     }
 
     private void initRoles() {

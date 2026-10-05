@@ -25,6 +25,14 @@ import lombok.*;
  * Applied for Phase 1 (LAUNCH_MODE, DISPLAY_ORDER):
  *   ALTER TABLE APPLICATIONS ADD (LAUNCH_MODE  VARCHAR2(20 CHAR) DEFAULT 'IFRAME' NOT NULL);
  *   ALTER TABLE APPLICATIONS ADD (DISPLAY_ORDER NUMBER(10)        DEFAULT 0        NOT NULL);
+ *
+ * Applied for icon support (ICON_TYPE):
+ *   ALTER TABLE APPLICATIONS ADD (ICON_TYPE VARCHAR2(20 CHAR) DEFAULT 'BOOTSTRAP_ICON' NOT NULL);
+ *
+ * Applied for soft-delete (DELETED):
+ *   ALTER TABLE APPLICATIONS ADD (DELETED NUMBER(1) DEFAULT 0 NOT NULL);
+ *   -- Hibernate 6 maps Java Boolean to NUMBER(1) on Oracle via OracleDialect.
+ *   -- 0 = not deleted, 1 = soft-deleted.
  */
 @Entity
 @Table(name = "APPLICATIONS")
@@ -48,9 +56,25 @@ public class Application {
     @Column(length = 500)
     private String url;
 
-    /** Material icon name (for Angular frontend) */
+    /** Bootstrap Icons class name, URL, or uploaded path — see IconType */
     @Column(length = 100)
     private String icon;
+
+    /**
+     * How the frontend should render the icon value.
+     * BOOTSTRAP_ICON → <i class="bi {{icon}}"></i>
+     * URL / UPLOAD   → <img [src]="icon">
+     *
+     * Oracle migration note (see class-level Javadoc):
+     *   ALTER TABLE APPLICATIONS ADD (
+     *     ICON_TYPE VARCHAR2(20 CHAR) DEFAULT 'BOOTSTRAP_ICON' NOT NULL
+     *   );
+     * This was pre-run before deploying this change.
+     */
+    @Column(name = "ICON_TYPE", length = 20, nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private IconType iconType = IconType.BOOTSTRAP_ICON;
 
     @Column(name = "AUTH_TYPE", length = 10)
     private String authType;
@@ -88,7 +112,23 @@ public class Application {
     @JoinColumn(name = "department_id")
     private Department department;
 
+    /**
+     * Soft-delete flag. When true the application is hidden from all lists,
+     * the dashboard, and ApplicationRegistry. No data is destroyed.
+     *
+     * Oracle DDL (run before first deploy of this change):
+     *   ALTER TABLE APPLICATIONS ADD (DELETED NUMBER(1) DEFAULT 0 NOT NULL);
+     *
+     * Hibernate 6 maps Boolean → NUMBER(1) on Oracle via OracleDialect.
+     * 0 = active, 1 = soft-deleted.
+     */
+    @Column(name = "DELETED", nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
+
     public enum Status { ACTIVE, INACTIVE }
 
     public enum LaunchMode { IFRAME, NEW_TAB, REDIRECT }
+
+    public enum IconType { BOOTSTRAP_ICON, URL, UPLOAD }
 }

@@ -54,6 +54,17 @@ public class DashboardService {
                         .description(app.getDescription())
                         .url(app.getUrl())
                         .icon(app.getIcon())
+                        // Phase 2: new fields — null-safe defaults mirror entity @Builder.Default
+                        .launchMode(app.getLaunchMode() != null
+                                ? app.getLaunchMode().name()
+                                : "IFRAME")
+                        .category(app.getCategory())
+                        .displayOrder(app.getDisplayOrder() != null
+                                ? app.getDisplayOrder()
+                                : 0)
+                        .iconType(app.getIconType() != null
+                                ? app.getIconType().name()
+                                : "BOOTSTRAP_ICON")
                         .build())
                 .toList();
     }

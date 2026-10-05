@@ -60,6 +60,10 @@ export class AdminService {
     return this.http.delete<void>(`${API_URL}/departments/${id}`);
   }
 
+  restoreDepartment(id: number): Observable<DepartmentDto> {
+    return this.http.patch<DepartmentDto>(`${API_URL}/departments/${id}/restore`, {});
+  }
+
   // Roles
   getRoles(): Observable<RoleDto[]> {
     return this.http.get<RoleDto[]>(`${API_URL}/roles`);
@@ -79,6 +83,10 @@ export class AdminService {
 
   deleteRole(id: number): Observable<void> {
     return this.http.delete<void>(`${API_URL}/roles/${id}`);
+  }
+
+  restoreRole(id: number): Observable<RoleDto> {
+    return this.http.patch<RoleDto>(`${API_URL}/roles/${id}/restore`, {});
   }
 
   // Applications
@@ -102,6 +110,10 @@ export class AdminService {
     return this.http.delete<void>(`${API_URL}/applications/${id}`);
   }
 
+  restoreApplication(id: number): Observable<ApplicationDto> {
+    return this.http.patch<ApplicationDto>(`${API_URL}/applications/${id}/restore`, {});
+  }
+
   // SubDepartments
   getSubDepartments(): Observable<SubDepartmentDto[]> {
     return this.http.get<SubDepartmentDto[]>(`${API_URL}/subdepartments`);
@@ -121,6 +133,10 @@ export class AdminService {
 
   deleteSubDepartment(id: number): Observable<void> {
     return this.http.delete<void>(`${API_URL}/subdepartments/${id}`);
+  }
+
+  restoreSubDepartment(id: number): Observable<SubDepartmentDto> {
+    return this.http.patch<SubDepartmentDto>(`${API_URL}/subdepartments/${id}/restore`, {});
   }
 
   // Application-Role whitelist

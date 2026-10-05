@@ -55,7 +55,10 @@ export class RolesComponent implements OnInit {
   }
 
   deleteRole(id: number): void {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce rôle?')) return;
+    if (!confirm(
+      'Marquer ce rôle comme supprimé ?\n\n' +
+      'Les affectations existantes (utilisateurs, applications) seront conservées.'
+    )) return;
 
     this.adminService.deleteRole(id).subscribe({
       next: () => this.loadData(),

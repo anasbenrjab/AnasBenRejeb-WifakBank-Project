@@ -3,6 +3,11 @@ package tn.esprit.wifakbankproject.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Soft-delete: run before first deployment of this change:
+ *   ALTER TABLE ROLES ADD (DELETED NUMBER(1) DEFAULT 0 NOT NULL);
+ * Hibernate 6 maps Boolean → NUMBER(1) on Oracle via OracleDialect.
+ */
 @Entity
 @Table(name = "ROLES")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -18,4 +23,15 @@ public class Role {
 
     @Column(length = 500)
     private String description;
+
+    /**
+     * Soft-delete flag. When true the role is hidden from all lists and pickers.
+     * APPLICATION_ROLES and USER_APPLICATION_ROLES rows are NOT affected.
+     *
+     * Oracle DDL (run before first deploy):
+     *   ALTER TABLE ROLES ADD (DELETED NUMBER(1) DEFAULT 0 NOT NULL);
+     */
+    @Column(name = "DELETED", nullable = false)
+    @Builder.Default
+    private Boolean deleted = false;
 }

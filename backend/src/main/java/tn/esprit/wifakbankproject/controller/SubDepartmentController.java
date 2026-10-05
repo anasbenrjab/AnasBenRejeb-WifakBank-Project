@@ -21,7 +21,8 @@ public class SubDepartmentController {
     }
 
     @GetMapping("/by-department/{departmentId}")
-    public ResponseEntity<List<SubDepartmentDto>> getSubDepartmentsByDepartment(@PathVariable Long departmentId) {
+    public ResponseEntity<List<SubDepartmentDto>> getSubDepartmentsByDepartment(
+            @PathVariable Long departmentId) {
         return ResponseEntity.ok(subDepartmentService.findByDepartmentId(departmentId));
     }
 
@@ -31,13 +32,19 @@ public class SubDepartmentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SubDepartmentDto> updateSubDepartment(@PathVariable Long id, @RequestBody SubDepartmentDto dto) {
+    public ResponseEntity<SubDepartmentDto> updateSubDepartment(
+            @PathVariable Long id, @RequestBody SubDepartmentDto dto) {
         return ResponseEntity.ok(subDepartmentService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSubDepartment(@PathVariable Long id) {
         subDepartmentService.delete(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<SubDepartmentDto> restoreSubDepartment(@PathVariable Long id) {
+        return ResponseEntity.ok(subDepartmentService.restore(id));
     }
 }

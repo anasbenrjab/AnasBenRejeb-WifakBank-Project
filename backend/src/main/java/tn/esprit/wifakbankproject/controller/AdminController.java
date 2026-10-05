@@ -86,7 +86,12 @@ public class AdminController {
     @DeleteMapping("/departments/{id}")
     public ResponseEntity<Void> deleteDepartment(@PathVariable Long id) {
         adminService.deleteDepartment(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/departments/{id}/restore")
+    public ResponseEntity<DepartmentDto> restoreDepartment(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.restoreDepartment(id));
     }
 
     // Roles endpoints
@@ -113,7 +118,12 @@ public class AdminController {
     @DeleteMapping("/roles/{id}")
     public ResponseEntity<Void> deleteRole(@PathVariable Long id) {
         adminService.deleteRole(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/roles/{id}/restore")
+    public ResponseEntity<RoleDto> restoreRole(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.restoreRole(id));
     }
 
     // Applications endpoints
@@ -128,19 +138,24 @@ public class AdminController {
     }
 
     @PostMapping("/applications")
-    public ResponseEntity<ApplicationDto> createApplication(@RequestBody ApplicationDto applicationDto) {
+    public ResponseEntity<ApplicationDto> createApplication(@jakarta.validation.Valid @RequestBody ApplicationDto applicationDto) {
         return ResponseEntity.ok(adminService.createApplication(applicationDto));
     }
 
     @PutMapping("/applications/{id}")
-    public ResponseEntity<ApplicationDto> updateApplication(@PathVariable Long id, @RequestBody ApplicationDto applicationDto) {
+    public ResponseEntity<ApplicationDto> updateApplication(@PathVariable Long id, @jakarta.validation.Valid @RequestBody ApplicationDto applicationDto) {
         return ResponseEntity.ok(adminService.updateApplication(id, applicationDto));
     }
 
     @DeleteMapping("/applications/{id}")
     public ResponseEntity<Void> deleteApplication(@PathVariable Long id) {
         adminService.deleteApplication(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/applications/{id}/restore")
+    public ResponseEntity<ApplicationDto> restoreApplication(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.restoreApplication(id));
     }
 
     // Application-Role whitelist endpoints

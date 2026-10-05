@@ -67,7 +67,7 @@
         @for (app of apps(); track app.id) {
           <article class="app-card" role="listitem">
             <div class="app-icon-wrapper" aria-hidden="true">
-              <span class="app-icon material-symbols-outlined">{{ app.icon || 'apps' }}</span>
+              <app-icon [icon]="app.icon" [iconType]="app.iconType" size="xl" />
             </div>
             <div class="app-body">
               <h3 class="app-name">{{ app.nom }}</h3>

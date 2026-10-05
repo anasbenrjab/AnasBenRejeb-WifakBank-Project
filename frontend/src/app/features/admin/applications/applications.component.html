@@ -40,6 +40,7 @@
       <table class="table">
         <thead>
           <tr>
+            <th>Icône</th>
             <th>Code</th>
             <th>Nom</th>
             <th>Département</th>
@@ -53,6 +54,7 @@
         <tbody>
           @for (i of [1,2,3,4,5]; track i) {
             <tr>
+              <td><div class="skeleton" style="width: 32px; height: 32px; border-radius: 6px;"></div></td>
               <td><div class="skeleton skeleton-badge"></div></td>
               <td><div class="skeleton skeleton-text" style="width: 150px;"></div></td>
               <td><div class="skeleton skeleton-text" style="width: 120px;"></div></td>
@@ -78,6 +80,7 @@
       <table class="table">
         <thead>
           <tr>
+            <th>Icône</th>
             <th>Code</th>
             <th>Nom</th>
             <th>Département</th>
@@ -91,6 +94,9 @@
         <tbody>
           @for (app of filteredApplications(); track app.id) {
             <tr>
+              <td>
+                <app-icon [icon]="app.icon" [iconType]="app.iconType" size="md" />
+              </td>
               <td><span class="badge-code">{{ app.code }}</span></td>
               <td>{{ app.nom }}</td>
               <td>{{ app.departmentName || '-' }}</td>
